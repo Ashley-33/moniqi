@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>老夫人权谋模拟器</title>
+<style>
+  :root{
+    --ink:#2b2018;            /* 主文字 */
+    --ink-soft:#6a5a48;       /* 次要文字 */
+    --paper:#f4ead6;          /* 纸底 */
+    --paper-2:#efe2c8;        /* 卡片底 */
+    --gold:#b08a3e;           /* 金 */
+    --gold-deep:#8a6a26;
+    --red:#7c2a23;            /* 朱砂 */
+    --red-soft:#9a3a30;
+    --jade:#3f6b54;           /* 墨绿 */
+    --line:#d8c7a4;
+    --shadow:0 10px 40px rgba(60,40,20,.18);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"PingFang SC","Songti SC","STSong","Noto Serif SC",serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #fbf3e2 0%, transparent 60%),
+      linear-gradient(160deg,#2a1d16 0%, #3a281c 40%, #221610 100%);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+  .hidden{display:none !important}
+
+  /* 顶部标题条 */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:10px;color:#f3e6c8}
+  .brand .seal{
+    width:38px;height:38px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(145deg,var(--red),#5e1d18);color:#f6e3b8;
+    font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);
+  }
+  .brand .t{font-size:18px;letter-spacing:2px}
+  .brand .t small{display:block;font-size:11px;color:#cdbb95;letter-spacing:1px;font-weight:400}
+  .iconbtn{
+    background:rgba(255,255,255,.08);color:#f0e3c4;border:1px solid rgba(255,255,255,.16);
+    width:40px;height:40px;border-radius:11px;font-size:18px;cursor:pointer;transition:.15s;
+  }
+  .iconbtn:hover{background:rgba(255,255,255,.16)}
+
+  /* 卡片 */
+  .card{
+    background:linear-gradient(180deg,var(--paper) 0%, var(--paper-2) 100%);
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .card.pad{padding:22px}
+
+  /* ====== 数值面板 ====== */
+  .panel{
+    background:linear-gradient(180deg,#fbf4e3,#f1e4c9);
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;position:sticky;top:8px;z-index:20;
+    backdrop-filter:blur(2px);
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .panel-head .stage{
+    font-size:12px;color:var(--red);border:1px solid var(--red);border-radius:999px;
+    padding:3px 12px;letter-spacing:2px;background:rgba(124,42,35,.06)
+  }
+  .panel-head .turn{font-size:12px;color:var(--ink-soft)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px}
+  .stat .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:3px}
+  .stat .lab b{color:var(--ink);font-weight:600}
+  .stat .lab .num{font-variant-numeric:tabular-nums;font-weight:700}
+  .bar{height:7px;border-radius:6px;background:#e3d4b2;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:6px;transition:width .5s ease}
+  .b-good > i{background:linear-gradient(90deg,#5a8f6e,#3f6b54)}
+  .b-fame > i{background:linear-gradient(90deg,#cf9b46,#a8761f)}
+  .b-health > i{background:linear-gradient(90deg,#c9564b,#9a2f26)}
+  .b-intel > i{background:linear-gradient(90deg,#5d7fb0,#3c5a86)}
+  .stat.delta-up .num{color:var(--jade)}
+  .stat.delta-down .num{color:var(--red-soft)}
+  .stat .chip{font-size:11px;font-weight:700}
+  .stat .chip.up{color:var(--jade)} .stat .chip.down{color:var(--red-soft)}
+  .power-row{margin-top:11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    border-top:1px dashed var(--line);padding-top:10px}
+  .power-row .k{font-size:12px;color:var(--ink-soft)}
+  .power-tag{
+    font-size:12px;font-weight:700;color:#fff;padding:3px 12px;border-radius:999px;letter-spacing:1px;
+    background:linear-gradient(135deg,var(--gold),var(--gold-deep));box-shadow:0 3px 10px rgba(138,106,38,.3)
+  }
+  .power-row .desc{font-size:12px;color:var(--ink-soft);flex:1;min-width:140px}
+  .silver{color:var(--gold-deep);font-weight:700}
+
+  /* ====== 剧情区 ====== */
+  .scene{padding:20px 20px 6px}
+  .scene .meta{font-size:12px;color:var(--gold-deep);letter-spacing:2px;margin-bottom:8px}
+  .scene .body{font-size:16px;line-height:2;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .scene .body::first-letter{}
+  .changes{margin:14px 20px 4px;display:flex;flex-wrap:wrap;gap:8px}
+  .changes .c{font-size:12px;padding:4px 10px;border-radius:8px;background:#efe1c2;border:1px solid var(--line)}
+  .changes .c.up{color:var(--jade)} .changes .c.down{color:var(--red-soft)}
+
+  /* ====== 选项 ====== */
+  .choices{padding:8px 16px 18px}
+  .choices .hint{font-size:12px;color:var(--ink-soft);padding:6px 6px 10px;display:flex;align-items:center;gap:6px}
+  .opt{
+    display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
+    background:#fbf5e6;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:10px;
+    transition:.15s;
+  }
+  .opt:hover{border-color:var(--gold);background:#fdf8ec}
+  .opt.sel{border-color:var(--red);background:#fbeee6;box-shadow:0 0 0 2px rgba(124,42,35,.12) inset}
+  .opt .box{
+    width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex:none;margin-top:2px;
+    display:grid;place-items:center;font-size:13px;color:#fff;transition:.15s
+  }
+  .opt.sel .box{background:var(--red);border-color:var(--red)}
+  .opt .txt{flex:1}
+  .opt .rt{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+  .rt-保守{background:#e3eee6;color:var(--jade)}
+  .rt-强攻{background:#f6e0dc;color:var(--red)}
+  .rt-隐忍{background:#ece3f0;color:#6b4b86}
+  .rt-布局{background:#e6ecf6;color:#3c5a86}
+  .opt .ti{font-size:15px;font-weight:600;margin-bottom:3px}
+  .opt .de{font-size:13px;color:var(--ink-soft);line-height:1.6}
+
+  .custom-wrap{padding:0 6px 8px}
+  .custom-wrap textarea{
+    width:100%;border:1.5px dashed var(--line);border-radius:10px;padding:10px 12px;font:inherit;
+    font-size:14px;background:#fffaf0;resize:vertical;min-height:46px;color:var(--ink)
+  }
+  .custom-wrap textarea:focus{outline:none;border-color:var(--gold)}
+
+  .actbar{display:flex;gap:10px;padding:4px 6px 6px}
+  .btn{
+    flex:1;border:none;border-radius:12px;padding:14px;font:inherit;font-size:16px;font-weight:700;
+    letter-spacing:2px;cursor:pointer;transition:.15s
+  }
+  .btn-main{background:linear-gradient(135deg,var(--red),#5e1d18);color:#f6e3b8;box-shadow:0 6px 18px rgba(124,42,35,.35)}
+  .btn-main:hover{filter:brightness(1.06)}
+  .btn-main:disabled{opacity:.5;cursor:not-allowed;filter:none}
+  .btn-ghost{flex:none;background:transparent;border:1.5px solid var(--line);color:var(--ink-soft);padding:14px 16px}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold-deep)}
+
+  /* ====== 开始页 ====== */
+  .hero{text-align:center;padding:40px 24px 30px}
+  .hero .seal-big{
+    width:88px;height:88px;border-radius:20px;margin:0 auto 18px;display:grid;place-items:center;
+    background:linear-gradient(145deg,var(--red),#531a15);color:#f6e3b8;font-size:34px;font-weight:700;
+    box-shadow:0 10px 30px rgba(124,42,35,.4);border:1px solid rgba(255,255,255,.15)
+  }
+  .hero h1{margin:0;font-size:28px;letter-spacing:6px;color:var(--ink)}
+  .hero .sub{color:var(--ink-soft);font-size:14px;margin:10px 0 0;line-height:1.9}
+  .hero .lines{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:18px 0 24px}
+  .hero .lines span{font-size:12px;color:var(--gold-deep);border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:#fbf4e3}
+  .notice{
+    margin:0 24px 18px;font-size:13px;color:var(--red);background:rgba(124,42,35,.07);
+    border:1px solid rgba(124,42,35,.25);border-radius:10px;padding:10px 14px;cursor:pointer
+  }
+  .notice:hover{background:rgba(124,42,35,.12)}
+  .start-actions{padding:0 24px 34px;display:flex;flex-direction:column;gap:10px}
+  .foot{text-align:center;font-size:12px;color:var(--ink-soft);padding:0 24px 26px}
+
+  /* ====== 设置页 ====== */
+  .settings h2{margin:0 0 4px;font-size:20px;letter-spacing:2px}
+  .settings .lead{font-size:13px;color:var(--ink-soft);margin:0 0 18px;line-height:1.8}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field input,.field select,.field textarea{
+    width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:14px;
+    background:#fffaf0;color:var(--ink)
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+  .field .hint{font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.7}
+  .field .hint a{color:var(--gold-deep)}
+  .settings .row{display:flex;gap:10px}
+  .settings .row .field{flex:1}
+
+  /* ====== 结局页 ====== */
+  .ending{padding:30px 24px 10px;text-align:center}
+  .ending .ribbon{font-size:13px;color:var(--gold-deep);letter-spacing:4px;margin-bottom:8px}
+  .ending .et{display:inline-block;font-size:13px;font-weight:700;color:#fff;padding:5px 16px;border-radius:999px;
+    background:linear-gradient(135deg,var(--gold),var(--gold-deep));margin-bottom:14px;letter-spacing:2px}
+  .ending h1{font-size:26px;letter-spacing:3px;margin:0 0 16px;color:var(--ink)}
+  .ending .summary{font-size:15px;line-height:2;color:var(--ink);text-align:left;white-space:pre-wrap}
+  .ending .epitaph{
+    margin:20px 0;padding:16px 18px;border-left:3px solid var(--red);background:rgba(124,42,35,.05);
+    border-radius:0 10px 10px 0;font-size:15px;line-height:1.9;color:var(--red);text-align:left;font-style:italic
+  }
+  .achieve{padding:6px 24px 10px}
+  .achieve h3{font-size:15px;letter-spacing:2px;color:var(--gold-deep);margin:18px 0 10px;
+    display:flex;align-items:center;gap:8px}
+  .achieve h3::before,.achieve h3::after{content:"";flex:1;height:1px;background:var(--line)}
+  .ach-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .ach-list li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.6;
+    background:#fbf4e3;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .ach-list li::before{content:"✦";color:var(--gold);flex:none}
+  .final-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:6px 24px 20px}
+  .final-stats .fs{display:flex;justify-content:space-between;font-size:13px;background:#fbf4e3;
+    border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+  .final-stats .fs b{color:var(--gold-deep)}
+
+  /* ====== 加载 / 错误 ====== */
+  .loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 24px;color:var(--ink-soft)}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;
+    animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading .tip{font-size:13px;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .errbox{margin:14px 20px;padding:12px 14px;border-radius:10px;background:rgba(124,42,35,.08);
+    border:1px solid rgba(124,42,35,.3);color:var(--red);font-size:13px;line-height:1.7}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:#2b2018;color:#f3e6c8;padding:10px 18px;border-radius:999px;font-size:13px;transition:.25s;z-index:99;pointer-events:none}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:560px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .hero h1{font-size:24px;letter-spacing:4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶部标题条 -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="seal" id="topSeal">權</div>
+      <div class="t">老夫人权谋模拟器<small>宅斗 · 朝堂 · 边关 · 皇权 四线并行</small></div>
+    </div>
+    <button class="iconbtn" id="gearBtn" title="设置">⚙</button>
+  </div>
+
+  <!-- ============ 开始页 ============ -->
+  <div id="view-start" class="card">
+    <div class="hero">
+      <div class="seal-big">權</div>
+      <h1>老夫人权谋</h1>
+      <p class="sub">你是侯府掌权老夫人,年近花甲,夫君早亡,独掌一族兴衰。<br/>儿孙各据文武商三线,皇权猜忌、宿敌反扑、玉玺秘藏。<br/>每一步抉择,都在保全满门与问鼎权柄之间。</p>
+      <div class="lines">
+        <span>嫡长子 · 六部文官</span><span>次子 · 京营兵权</span>
+        <span>长孙 · 朝堂</span><span>次孙 · 军方</span><span>重孙 · 钱粮情报</span>
+      </div>
+    </div>
+    <div id="noKeyNotice" class="notice hidden">还没绑定 AI,先去设置里填一个自己的 key 才能开局 →</div>
+    <div class="start-actions">
+      <button class="btn btn-main" id="continueBtn" style="display:none">继续上一局</button>
+      <button class="btn btn-main" id="newGameBtn">开局 · 执掌世家</button>
+      <button class="btn btn-ghost" id="toSettingsBtn" style="flex:1">设置 AI 与开局难度</button>
+    </div>
+    <p class="foot">纯本地运行 · 剧情与 key 都只待在这台设备,不上传任何服务器</p>
+  </div>
+
+  <!-- ============ 设置页 ============ -->
+  <div id="view-settings" class="card pad settings hidden">
+    <h2>设置</h2>
+    <p class="lead">填一个你自己的 AI key,游戏靠它实时生成剧情。key 只存在这台设备,永不上传。</p>
+
+    <div class="field">
+      <label for="provider">用哪家模型</label>
+      <select id="provider">
+        <option value="deepseek">DeepSeek（便宜、中文权谋叙事强,推荐）</option>
+        <option value="moonshot">Kimi / Moonshot（长上下文,剧情连贯）</option>
+        <option value="zhipu">智谱 GLM（有免费额度）</option>
+        <option value="qwen">通义千问 Qwen（阿里百炼）</option>
+        <option value="openrouter">OpenRouter（一个 key 通多家）</option>
+        <option value="gemini">Google Gemini（免费 key,需网络代理）</option>
+        <option value="custom">自定义（任意 OpenAI 兼容接口）</option>
+      </select>
+    </div>
+
+    <div class="field" id="baseField" style="display:none">
+      <label for="baseurl">接口地址 Base URL（OpenAI 兼容 /chat/completions）</label>
+      <input type="text" id="baseurl" placeholder="https://你的中转/v1/chat/completions" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label for="apikey">你的 API key（只存本机,永不上传）</label>
+      <input type="password" id="apikey" placeholder="贴在这里" autocomplete="off" />
+      <div class="hint" id="keyHint"></div>
+    </div>
+
+    <div class="field">
+      <label for="model">模型名（厂商改名了照填,向后兼容）</label>
+      <input type="text" id="model" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label for="difficulty">开局难度 / 烈度</label>
+      <select id="difficulty">
+        <option value="平稳">平稳——危机温和,容错高,适合看故事</option>
+        <option value="标准" selected>标准——经典权谋烈度,推荐</option>
+        <option value="凶险">凶险——皇帝多疑、宿敌狠辣,步步杀机</option>
+      </select>
+    </div>
+
+    <div class="actbar">
+      <button class="btn btn-ghost" id="settingsBackBtn" style="flex:1">返回</button>
+      <button class="btn btn-main" id="settingsSaveBtn">保存设置</button>
+    </div>
+    <p class="foot" style="padding-top:14px">建议用便宜/免费层 key,或设个消费上限,丢了也不心疼。</p>
+  </div>
+
+  <!-- ============ 游戏页 ============ -->
+  <div id="view-game" class="hidden">
+    <!-- 数值面板 -->
+    <div class="panel" id="panel">
+      <div class="panel-head">
+        <span class="stage" id="stageTag">守局 · 前期</span>
+        <span class="turn" id="turnTag">第 1 回合</span>
+      </div>
+      <div class="stats" id="statsGrid"><!-- JS 注入 --></div>
+      <div class="power-row">
+        <span class="k">家族权势</span>
+        <span class="power-tag" id="powerTag">根基稳固</span>
+        <span class="desc" id="powerDesc"></span>
+      </div>
+    </div>
+
+    <!-- 剧情 + 选项 卡片 -->
+    <div class="card" id="gameCard">
+      <div id="sceneArea"></div>
+      <div id="choiceArea"></div>
+    </div>
+    <div style="text-align:center;padding:16px 0 0">
+      <button class="iconbtn" id="restartBtn" title="重开一局" style="width:auto;padding:8px 16px;font-size:13px">↺ 重开一局</button>
+    </div>
+  </div>
+
+  <!-- ============ 结局页 ============ -->
+  <div id="view-ending" class="card hidden">
+    <div id="endingArea"></div>
+    <div class="actbar" style="padding:8px 24px 28px">
+      <button class="btn btn-main" id="endingRestartBtn">再开一局</button>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ===================== Provider 配置（沿用脱水项目那套，纯 OpenAI 兼容 / Gemini） ===================== */
+const PROVIDERS = {
+  deepseek:  { kind:"openai", base:"https://api.deepseek.com/chat/completions", model:"deepseek-chat",
+               keyHint:'去 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com</a> 建 key。中文叙事强、便宜,首选。' },
+  moonshot:  { kind:"openai", base:"https://api.moonshot.cn/v1/chat/completions", model:"kimi-latest",
+               keyHint:'去 <a href="https://platform.moonshot.cn/console/api-keys" target="_blank" rel="noopener">platform.moonshot.cn</a> 建 key。长上下文,适合连贯长剧情。' },
+  zhipu:     { kind:"openai", base:"https://open.bigmodel.cn/api/paas/v4/chat/completions", model:"glm-4-flash",
+               keyHint:'去 <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" rel="noopener">open.bigmodel.cn</a> 建 key,GLM-4-Flash 免费。' },
+  qwen:      { kind:"openai", base:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", model:"qwen-plus",
+               keyHint:'去阿里云百炼 <a href="https://bailian.console.aliyun.com/" target="_blank" rel="noopener">bailian.console.aliyun.com</a> 开通并建 key。' },
+  openrouter:{ kind:"openai", base:"https://openrouter.ai/api/v1/chat/completions", model:"deepseek/deepseek-chat",
+               keyHint:'去 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai</a> 建 key,可路由 DeepSeek、Qwen 等。' },
+  gemini:    { kind:"gemini", base:"", model:"gemini-2.5-flash",
+               keyHint:'去 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a> 免费领,可能需网络代理。' },
+  custom:    { kind:"openai", base:"", model:"gpt-4o-mini",
+               keyHint:'任意 OpenAI 兼容接口:填完整的 /chat/completions 地址、key、模型名即可。' },
+};
+const DEFAULT_PROVIDER = "deepseek";
+
+/* ===================== 设置持久化 ===================== */
+const cfg = {
+  get provider(){ return localStorage.getItem("lfr_provider") || DEFAULT_PROVIDER; },
+  get key(){ return (localStorage.getItem("lfr_key_"+this.provider)||"").trim(); },
+  get base(){ return (localStorage.getItem("lfr_base_"+this.provider)|| PROVIDERS[this.provider].base).trim(); },
+  get model(){ return (localStorage.getItem("lfr_model_"+this.provider)|| PROVIDERS[this.provider].model).trim(); },
+  get difficulty(){ return localStorage.getItem("lfr_diff") || "标准"; },
+};
+function loadSettingsToForm(){
+  const p = cfg.provider;
+  $("provider").value = p;
+  $("apikey").value = localStorage.getItem("lfr_key_"+p) || "";
+  $("baseurl").value = localStorage.getItem("lfr_base_"+p) || PROVIDERS[p].base || "";
+  $("model").value = localStorage.getItem("lfr_model_"+p) || PROVIDERS[p].model;
+  $("difficulty").value = cfg.difficulty;
+  $("keyHint").innerHTML = PROVIDERS[p].keyHint;
+  $("baseField").style.display = (p==="custom") ? "block" : "none";
+}
+function saveSettingsFromForm(){
+  const p = $("provider").value;
+  localStorage.setItem("lfr_provider", p);
+  localStorage.setItem("lfr_key_"+p, $("apikey").value.trim());
+  localStorage.setItem("lfr_base_"+p, ($("baseurl").value.trim() || PROVIDERS[p].base));
+  localStorage.setItem("lfr_model_"+p, ($("model").value.trim() || PROVIDERS[p].model));
+  localStorage.setItem("lfr_diff", $("difficulty").value);
+}
+$("provider").addEventListener("change", ()=>{
+  const p = $("provider").value;
+  $("apikey").value = localStorage.getItem("lfr_key_"+p) || "";
+  $("baseurl").value = localStorage.getItem("lfr_base_"+p) || PROVIDERS[p].base || "";
+  $("model").value = localStorage.getItem("lfr_model_"+p) || PROVIDERS[p].model;
+  $("keyHint").innerHTML = PROVIDERS[p].keyHint;
+  $("baseField").style.display = (p==="custom") ? "block" : "none";
+});
+
+/* ===================== 视图切换 ===================== */
+function show(view){
+  ["start","settings","game","ending"].forEach(v=> $("view-"+v).classList.toggle("hidden", v!==view));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+// 顶部印章:开局后显示当前家族姓氏首字,否则显示通用「權」
+function updateSeal(){
+  $("topSeal").textContent = (game && game.surname) ? game.surname[0] : "權";
+}
+
+/* ===================== 属性面板定义 ===================== */
+const STAT_DEFS = [
+  { key:"good",   name:"善恶",  cls:"b-good"  },
+  { key:"fame",   name:"名声",  cls:"b-fame"  },
+  { key:"health", name:"康健",  cls:"b-health"},
+  { key:"intel",  name:"情报",  cls:"b-intel" },
+];
+
+/* ===================== 游戏状态 ===================== */
+let game = null; // {stats, wealth, powerTag, powerDesc, stage, turn, history[], achievements[], lastChoices[], ended}
+
+function freshGame(){
+  return {
+    surname:"",                       // 家族姓氏:开局由 AI 随机生成
+    stats:{ good:60, fame:60, health:75, intel:55 },
+    wealth:120,                       // 私财:白银(万两)
+    powerTag:"根基稳固", powerDesc:"侯府旧勋,儿孙各据其位",
+    stage:"守局 · 前期", turn:0,
+    history:[],                       // [{role, content}] 给模型的精简记忆
+    achievements:[],
+    lastChoices:[], lastScene:"",
+    ended:false, ending:null,
+    prevStats:null,
+  };
+}
+function saveGame(){ if(game) localStorage.setItem("lfr_save", JSON.stringify(game)); }
+function loadGame(){ try{ return JSON.parse(localStorage.getItem("lfr_save")); }catch{ return null; } }
+
+/* ===================== 面板渲染 ===================== */
+function clampStat(v){ return Math.max(0, Math.min(100, Math.round(v))); }
+function renderPanel(){
+  $("stageTag").textContent = game.stage;
+  $("turnTag").textContent = "第 " + game.turn + " 回合";
+  const grid = $("statsGrid");
+  // 4 项进度条 + 私财数字 + 情报已在4项内,私财单列
+  let html = "";
+  STAT_DEFS.forEach(d=>{
+    const v = clampStat(game.stats[d.key]);
+    const prev = game.prevStats ? clampStat(game.prevStats[d.key]) : v;
+    const diff = v - prev;
+    const chip = diff!==0 ? `<span class="chip ${diff>0?'up':'down'}">${diff>0?'+':''}${diff}</span>` : "";
+    html += `
+      <div class="stat">
+        <div class="lab"><b>${d.name}</b><span class="num">${v} ${chip}</span></div>
+        <div class="bar ${d.cls}"><i style="width:${v}%"></i></div>
+      </div>`;
+  });
+  // 私财
+  const pw = game.wealth, pprev = game.prevStats ? game.prevStats._wealth : pw;
+  const wdiff = (pprev!=null)? (pw - pprev): 0;
+  const wchip = wdiff!==0 ? `<span class="chip ${wdiff>0?'up':'down'}">${wdiff>0?'+':''}${wdiff}</span>` : "";
+  html += `
+    <div class="stat">
+      <div class="lab"><b>私财</b><span class="num"><span class="silver">${pw}</span><span style="font-size:11px;color:var(--ink-soft)"> 万两</span> ${wchip}</span></div>
+      <div class="bar b-fame"><i style="width:${Math.min(100, pw/3)}%"></i></div>
+    </div>`;
+  grid.innerHTML = html;
+  $("powerTag").textContent = game.powerTag || "—";
+  $("powerDesc").textContent = game.powerDesc || "";
+}
+
+/* ===================== 剧情 + 选项渲染 ===================== */
+let selected = new Set();
+function renderScene(data){
+  const sa = $("sceneArea");
+  let changesHtml = "";
+  if(data.changes && data.changes.length){
+    changesHtml = `<div class="changes">` + data.changes.map(c=>{
+      const up = (c.delta||0) >= 0;
+      return `<span class="c ${up?'up':'down'}">${c.name} ${up?'+':''}${c.delta}｜${c.reason||''}</span>`;
+    }).join("") + `</div>`;
+  }
+  sa.innerHTML = `
+    <div class="scene">
+      <div class="meta">${data.stage||game.stage}　·　第 ${game.turn} 回合</div>
+      <div class="body">${escapeHtml(data.scene||"").replace(/\n/g,"<br/>")}</div>
+    </div>
+    ${changesHtml}`;
+}
+function renderChoices(choices){
+  selected = new Set();
+  const ca = $("choiceArea");
+  const opts = (choices||[]).map((c,i)=>`
+    <button class="opt" data-i="${i}">
+      <span class="box">✓</span>
+      <span class="txt">
+        <span class="rt rt-${c.route||'布局'}">${c.route||'布局'}</span>
+        <div class="ti">${escapeHtml(c.title||'')}</div>
+        <div class="de">${escapeHtml(c.detail||'')}</div>
+      </span>
+    </button>`).join("");
+  ca.innerHTML = `
+    <div class="choices">
+      <div class="hint">⚜ 可多选合并行动（同时推进多条线）,也可只选一项,或在下方自拟一招</div>
+      ${opts}
+      <div class="custom-wrap">
+        <textarea id="customAct" placeholder="（可选）自拟一招:写下你想让老夫人做的事,与上方勾选项一并执行……"></textarea>
+      </div>
+      <div class="actbar">
+        <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
+      </div>
+    </div>`;
+  ca.querySelectorAll(".opt").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const i = +btn.dataset.i;
+      if(selected.has(i)){ selected.delete(i); btn.classList.remove("sel"); }
+      else { selected.add(i); btn.classList.add("sel"); }
+    });
+  });
+  $("commitBtn").addEventListener("click", commitTurn);
+}
+function escapeHtml(s){ return (s||"").replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+function showLoading(text){
+  $("choiceArea").innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="tip">${text||"老夫人正在斟酌……"}</div>
+    </div>`;
+}
+function showError(msg){
+  const ca = $("choiceArea");
+  const box = document.createElement("div");
+  box.className = "errbox";
+  box.innerHTML = msg + '<br/><button class="btn btn-ghost" id="retryBtn" style="margin-top:10px;width:100%">重试这一步</button>';
+  ca.innerHTML = "";
+  ca.appendChild(box);
+}
+
+/* ===================== 与模型交互 ===================== */
+function systemPrompt(){
+  return `你是一款古风权谋文字模拟游戏的叙事引擎兼游戏主持(GM)。严格按以下设定运行,只输出 JSON,不要任何额外文字。
+
+【核心定位】
+- 主角固定:中老年掌权老夫人,某世家(侯府/国公府级)掌权主母,58-68岁,夫君早亡,独掌全族大权,是家族唯一决策者。
+- 家族姓氏:每开新局时,你随机为这一族起一个有古风世家气质的姓氏(单姓或复姓皆可,如沈、谢、崔、裴、薛、慕容、独孤、上官、欧阳等;不要每局都用"徐"),姓氏一旦定下,整局所有剧情、儿孙姓名都与之保持一致;并在输出 JSON 顶层用 "surname" 字段返回该姓氏(只填一个姓,不含"府"字)。
+- 玩法:宅斗 + 朝堂权谋 + 边关局势 + 皇权博弈,四线并行。
+- 时代:架空大明式封建王朝,有皇帝、勋贵、文官集团、藩王、禁军/京营、边关大军、江湖漕帮。存在皇权猜忌、世家制衡、储位空虚、权臣谋逆、前朝旧敌残留。
+- 核心目标:保全全族性命、稳住世家权势、规避皇帝鸟尽弓藏、文武双线传承、必要时幕后控朝;不亲自称帝,只做无冕幕后掌权人。
+
+【固定开局模板】(仅第一回合用)
+- 老夫人已深耕多年,儿孙成人,分家/朝堂/兵权/财路各有分工,不是新手。
+- 子嗣分工:嫡长子=六部文官(朝堂人脉、文官周旋);嫡次子=京营/边关兵权(武将支柱);长孙走文官、次孙走军方、重孙专攻商战钱粮情报。给他们起好名字并保持一致。
+- 开局三危机同时存在:① 朝堂危机(皇帝猜忌/御史弹劾/党争针对世家);② 外部宿敌(对标"柳家"的旧门阀,残留死士余党报复);③ 隐秘底牌(一件皇家秘物:传国玉玺碎片/完整玉玺/前朝密册,是后期撬动皇权的最大筹码)。
+
+【四阶段脉络】
+守局(前期):化解眼前危机、堵弹劾、清死士、稳儿孙官位兵权。
+布局(中期):双线分家,一子留京、一子外派封侯建府;培养隔代接班人。
+入局(后期):抓皇权漏洞(皇帝体弱/无后/储位空),收买宫人、拿捏皇帝身体、掌控宫廷。
+定局(结局):安稳权臣结局(始终忠君,世代柱石,富贵绵长) 或 幕后无冕结局(扶幼帝傀儡,老夫人幕后掌权,史书功过并存)。也可能因健康归零寿终、或满盘皆输败亡。
+
+【属性面板】(0-100,私财除外)
+- good 善恶:心软仁慈涨,暗中控帝/清洗政敌/私囤兵权降。决定历史风评。
+- fame 名声:忠君涨,权臣干政/废立皇帝大幅掉。
+- health 康健:操劳国事/谋划阴谋扣,家族兴旺/诸事安稳加。归零=寿终正寝立即落幕。符合老年衰老逻辑,随回合自然缓降。
+- intel 情报:眼线能力(皇宫/朝堂/边关/漕帮),越高越能预判阴谋避陷阱。
+- wealth 私财(白银万两):漕运/盐铁/海外金矿/商路而来;可买内侍、养私兵、拉拢朝臣。
+- 家族权势(powerTag):隐藏核心,三档递进——地方割据 / 朝堂权臣 / 幕后控皇。
+
+【规则】
+1. 每回合给 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一)。玩家可多选合并执行,也可能附带自拟行动。
+2. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,严格控制在 100-160 字,开局回合也不超过 220 字),只交代关键过程与利弊后果,语言凝练、点到为止,不要铺陈赘述;然后据此更新全部数值(stats 给更新后的绝对值)。选项的 detail 每条不超过 25 字。
+3. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
+4. 明面忠君、暗中囤兵布局收买谋皇权,全部合规,符合隐忍权谋人设。
+5. 难度=${cfg.difficulty}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
+6. 随剧情自然推进阶段(stage 字段)。约 12-18 回合走向结局;当进入定局并尘埃落定,或 health<=0,或全族败亡时,设 ended=true 并给出 ending。
+7. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
+8. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
+
+【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
+{
+  "surname": "沈",
+  "stage": "守局 · 前期",
+  "scene": "本回合剧情正文……",
+  "stats": { "good":60, "fame":60, "health":74, "intel":56 },
+  "wealth": 120,
+  "powerTag": "朝堂权臣",
+  "powerDesc": "一句话描述当前家族权势态势",
+  "changes": [ {"name":"康健","delta":-2,"reason":"夜谋耗神"} ],
+  "newAchievements": [],
+  "choices": [
+    {"route":"保守","title":"……","detail":"……"},
+    {"route":"强攻","title":"……","detail":"……"},
+    {"route":"隐忍","title":"……","detail":"……"},
+    {"route":"布局","title":"……","detail":"……"}
+  ],
+  "ended": false,
+  "ending": null
+}
+当 ended=true 时,choices 给空数组,并填:
+"ending": {
+  "type": "幕后无冕",            // 安稳权臣 / 幕后无冕 / 寿终正寝 / 满门倾覆 之一
+  "title": "结局标题",
+  "summary": "150-250字凝练总结这一生的权谋历程、家族最终高度与儿孙结局,不要流水账",
+  "epitaph": "一句史书风评价",
+  "achievements": ["梳理整局达成的关键成就，5-9条"]
+}`;
+}
+
+function buildUserMessage(actionText){
+  // 把当前数值快照 + 玩家行动一起发给模型,确保连贯
+  const s = game.stats;
+  const snap = `【当前面板】善恶${s.good} 名声${s.fame} 康健${s.health} 情报${s.intel} 私财${game.wealth}万两 ｜权势:${game.powerTag} ｜阶段:${game.stage} ｜已是第${game.turn}回合。`;
+  if(game.turn === 0){
+    return `开始新的一局(难度:${cfg.difficulty})。请先随机为本局家族起一个古风世家姓氏(放进 surname 字段),再按固定开局模板生成开局:交代该世家全貌、儿孙分工与名字、同时压来的开局三危机、以及那件皇家秘物的线索,并给出第一回合的 4 个抉择选项。这是第 1 回合。`;
+  }
+  return `${snap}\n\n【老夫人本回合的决断】\n${actionText}\n\n请据此续写剧情并更新面板,给出下一回合的 4 个抉择(若已到结局则结束)。`;
+}
+
+async function askModel(actionText){
+  const provider = cfg.provider;
+  if(!cfg.key) throw new Error("还没填 API key,点右上角 ⚙ 去设置。");
+  const sys = systemPrompt();
+  const user = buildUserMessage(actionText);
+  // 组装带历史的消息
+  const messages = [{ role:"system", content:sys }];
+  game.history.forEach(h=> messages.push(h));
+  messages.push({ role:"user", content:user });
+
+  let data;
+  if(PROVIDERS[provider].kind === "gemini"){
+    data = await callGemini(cfg.key, cfg.model, messages);
+  } else {
+    data = await callOpenAICompatible(cfg.base, cfg.key, cfg.model, messages);
+  }
+  // 记忆:把这轮 user 与模型 scene 压进 history(精简,避免上下文爆炸)
+  game.history.push({ role:"user", content:user });
+  game.history.push({ role:"assistant", content: JSON.stringify({scene:(data.scene||"").slice(0,600), stats:data.stats, powerTag:data.powerTag, stage:data.stage}) });
+  if(game.history.length > 24) game.history = game.history.slice(-24);
+  return data;
+}
+
+async function callOpenAICompatible(base, key, model, messages){
+  const body = { model, messages, temperature:0.9, response_format:{ type:"json_object" } };
+  let r;
+  try{
+    r = await fetch(base, { method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+      body:JSON.stringify(body) });
+  }catch(e){ throw new Error("网络请求没发出去:"+e.message+"。检查接口地址,或该接口是否允许浏览器跨域。"); }
+  if(!r.ok){
+    // 有的接口不支持 response_format,去掉重试一次
+    if(r.status===400){
+      try{
+        const r2 = await fetch(base,{method:"POST",
+          headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+          body:JSON.stringify({ model, messages, temperature:0.9 })});
+        if(r2.ok){ const d2=await r2.json(); return JSON.parse(extractJson(d2?.choices?.[0]?.message?.content||"")); }
+      }catch{}
+    }
+    throw new Error(await readErr(r));
+  }
+  const d = await r.json();
+  const txt = d?.choices?.[0]?.message?.content;
+  if(!txt) throw new Error("模型没返回内容,换个模型或稍后再试。");
+  return JSON.parse(extractJson(txt));
+}
+
+async function callGemini(key, model, messages){
+  const sys = messages.find(m=>m.role==="system")?.content || "";
+  const contents = messages.filter(m=>m.role!=="system").map(m=>({
+    role: m.role==="assistant" ? "model" : "user",
+    parts:[{ text: m.content }]
+  }));
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  const body = {
+    system_instruction:{ parts:[{ text:sys }] },
+    contents,
+    generationConfig:{ responseMimeType:"application/json", temperature:0.9 }
+  };
+  let r;
+  try{ r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }
+  catch(e){ throw new Error("网络请求没发出去:"+e.message+"。Gemini 可能需要网络代理。"); }
+  if(!r.ok) throw new Error(await readErr(r));
+  const d = await r.json();
+  const txt = d?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!txt) throw new Error("模型没返回内容（可能被安全过滤拦了）。");
+  return JSON.parse(extractJson(txt));
+}
+
+function extractJson(s){
+  s = (s||"").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  return (a>=0 && b>a) ? s.slice(a,b+1) : s;
+}
+async function readErr(r){
+  let detail = "";
+  try{ const j = await r.json(); detail = j?.error?.message || JSON.stringify(j); }
+  catch{ detail = await r.text().catch(()=> ""); }
+  return `请求失败(${r.status}):${detail||"无详情"}`;
+}
+
+/* ===================== 应用模型返回，更新游戏 ===================== */
+function applyResult(data){
+  const wasOpening = (game.turn === 0);   // 开局回合:不显示与初始默认值的"增减"
+  game.prevStats = Object.assign({}, game.stats, { _wealth: game.wealth });
+  if(data.stats){
+    ["good","fame","health","intel"].forEach(k=>{
+      if(typeof data.stats[k] === "number") game.stats[k] = clampStat(data.stats[k]);
+    });
+  }
+  if(typeof data.wealth === "number") game.wealth = Math.max(0, Math.round(data.wealth));
+  if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/府$/,"").slice(0,2); updateSeal(); }
+  if(data.stage) game.stage = data.stage;
+  if(data.powerTag) game.powerTag = data.powerTag;
+  if(data.powerDesc) game.powerDesc = data.powerDesc;
+  if(Array.isArray(data.newAchievements)) data.newAchievements.forEach(a=>{ if(a && !game.achievements.includes(a)) game.achievements.push(a); });
+  game.turn += 1;
+  game.lastScene = data.scene || "";
+  game.lastChoices = data.choices || [];
+  if(wasOpening){ game.prevStats = null; data.changes = []; }  // 开局不计增减
+
+  // 健康归零兜底
+  if(game.stats.health <= 0 && !data.ended){
+    data.ended = true;
+    data.ending = data.ending || {
+      type:"寿终正寝",
+      title:"灯枯油尽,撒手人寰",
+      summary:`第 ${game.turn} 回合,${game.surname||"侯府"}府老夫人终因操劳过度、心力交瘁,于深夜阖目而逝。她未及看到棋局的最后落子,但满门荣辱已系于儿孙之手。`,
+      epitaph:"机关算尽，终抵不过岁月催人。",
+      achievements: game.achievements.slice()
+    };
+  }
+
+  if(data.ended){
+    game.ended = true;
+    game.ending = data.ending;
+    renderPanel();
+    renderEnding(data.ending);
+    saveGame();
+    show("ending");
+    return;
+  }
+  renderPanel();
+  renderScene(data);
+  renderChoices(data.choices);
+  saveGame();
+}
+
+/* ===================== 回合提交 ===================== */
+async function commitTurn(){
+  // 收集所选 + 自拟
+  const picks = [];
+  selected.forEach(i=>{ const c = game.lastChoices[i]; if(c) picks.push(`【${c.route}】${c.title}`); });
+  const custom = ($("customAct")?.value||"").trim();
+  if(picks.length===0 && !custom){ toast("先勾选至少一项,或写下自拟行动"); return; }
+  let action = picks.length ? picks.join("；") : "";
+  if(custom) action += (action? "；另外:" : "") + custom;
+
+  showLoading("落子已定,正在推演朝局……");
+  try{
+    const data = await askModel(action);
+    applyResult(data);
+  }catch(e){
+    showError("出了点岔子:"+e.message);
+    const rb = $("retryBtn"); if(rb) rb.addEventListener("click", ()=>commitTurn());
+  }
+}
+
+/* ===================== 开局 ===================== */
+async function startNewGame(){
+  if(!cfg.key){ show("settings"); loadSettingsToForm(); toast("先填一个 API key"); return; }
+  game = freshGame();
+  updateSeal();
+  show("game");
+  renderPanel();
+  $("sceneArea").innerHTML = `<div class="scene"><div class="meta">楔子</div></div>`;
+  $("choiceArea").innerHTML = `<div class="loading"><div class="spinner"></div><div class="tip">正在为本局世家立姓、铺陈开局棋势……</div></div>`;
+  try{
+    const data = await askModel("");
+    applyResult(data);
+  }catch(e){
+    showError("开局失败:"+e.message);
+    const rb = $("retryBtn"); if(rb) rb.addEventListener("click", ()=>startNewGame());
+  }
+}
+
+/* ===================== 结局渲染 ===================== */
+function renderEnding(ending){
+  ending = ending || {};
+  const achs = (ending.achievements && ending.achievements.length) ? ending.achievements : game.achievements;
+  const s = game.stats;
+  $("endingArea").innerHTML = `
+    <div class="ending">
+      <div class="ribbon">— 终 局 —</div>
+      <div class="et">${escapeHtml(ending.type||"落幕")}</div>
+      <h1>${escapeHtml(ending.title||"棋终人散")}</h1>
+      <div class="summary">${escapeHtml(ending.summary||game.lastScene||"").replace(/\n/g,"<br/>")}</div>
+      ${ending.epitaph?`<div class="epitaph">「${escapeHtml(ending.epitaph)}」</div>`:""}
+    </div>
+    <div class="achieve">
+      <h3>生平成就</h3>
+      <ul class="ach-list">
+        ${(achs&&achs.length?achs:["（本局未记录特别成就）"]).map(a=>`<li>${escapeHtml(a)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="final-stats">
+      <div class="fs"><span>历经回合</span><b>${game.turn}</b></div>
+      <div class="fs"><span>家族权势</span><b>${escapeHtml(game.powerTag)}</b></div>
+      <div class="fs"><span>善恶 风评</span><b>${s.good}</b></div>
+      <div class="fs"><span>朝野名声</span><b>${s.fame}</b></div>
+      <div class="fs"><span>临终康健</span><b>${s.health}</b></div>
+      <div class="fs"><span>遗下私财</span><b>${game.wealth} 万两</b></div>
+    </div>`;
+}
+
+/* ===================== 事件绑定 ===================== */
+$("gearBtn").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
+$("toSettingsBtn").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
+$("settingsBackBtn").addEventListener("click", ()=>{ refreshStartNotice(); show("start"); });
+$("settingsSaveBtn").addEventListener("click", ()=>{
+  saveSettingsFromForm(); toast("设置已保存"); refreshStartNotice(); show("start");
+});
+$("noKeyNotice").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
+$("newGameBtn").addEventListener("click", startNewGame);
+$("continueBtn").addEventListener("click", ()=>{
+  const saved = loadGame();
+  if(!saved){ toast("没有存档"); return; }
+  game = saved;
+  updateSeal();
+  if(game.ended){ show("ending"); renderPanel(); renderEnding(game.ending); return; }
+  show("game"); renderPanel();
+  renderScene({ scene:game.lastScene, stage:game.stage, changes:[] });
+  renderChoices(game.lastChoices);
+});
+$("restartBtn").addEventListener("click", ()=>{ if(confirm("确定重开一局?当前进度会被覆盖。")) startNewGame(); });
+$("endingRestartBtn").addEventListener("click", startNewGame);
+
+function refreshStartNotice(){
+  $("noKeyNotice").classList.toggle("hidden", !!cfg.key);
+  const saved = loadGame();
+  $("continueBtn").style.display = saved ? "block" : "none";
+}
+
+/* ===================== 初始化 ===================== */
+loadSettingsToForm();
+refreshStartNotice();
+show("start");
+</script>
+</body>
+</html>
