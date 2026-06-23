@@ -660,9 +660,13 @@ function systemPrompt(){
 4. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
 5. 明面忠君、暗中囤兵布局收买谋皇权,全部合规,符合隐忍权谋人设。
 6. 难度=${cfg.difficulty}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
-7. 随剧情自然推进阶段(stage 字段)。约 12-18 回合走向结局;当进入定局并尘埃落定,或 health<=0,或全族败亡时,设 ended=true 并给出 ending。
-8. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
-9. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
+7. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
+8. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
+9. 阶段必须随回合推进,严禁长期滞留「前期」。以约 16 回合一局为基准的回合→阶段对照:第 1-4 回合=守局·前期;第 5-9 回合=布局·中期;第 10-13 回合=入局·后期;第 14 回合起=定局·结局。系统每回合会在玩家消息里附上当前回合数与建议阶段,stage 字段必须据此推进、不得倒退或停滞在前期。全局约 14-18 回合内必须收束;一旦逼近终局或触发败亡条件,果断设 ended=true,绝不可无限拖延。
+10. 结局分「善终」与「败亡」两类,务必依据实际局势如实给出,不要一味圆满。
+    善终:① 安稳权臣(始终忠君、世代柱石、富贵绵长);② 幕后无冕(扶傀儡幼帝、老夫人幕后掌权)。
+    败亡(bad ending,条件触发时必须给,不要强行圆满):③ 满门抄斩(谋逆败露、玉玺事泄被定大逆,或触怒皇帝遭族诛);④ 抄家流放(贪墨结党证据落入皇帝/政敌之手,家产充公、子孙流徙);⑤ 破产败落(私财耗尽 wealth≤0 且无力回天,变卖田产、家道中落、门庭凋零);⑥ 寿终正寝(health 归零,殚精竭虑而逝,棋局未竟);⑦ 众叛亲离(fame 与 good 双双过低,儿孙离心、墙倒众推)。
+    触发判断:当 wealth≤0,或 fame 与 good 双双跌至 25 以下,或谋夺皇权之事败露被抓实时,应果断导向对应的败亡结局,而非强行善终。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
 {
@@ -686,7 +690,7 @@ function systemPrompt(){
 }
 当 ended=true 时,choices 给空数组,并填:
 "ending": {
-  "type": "幕后无冕",            // 安稳权臣 / 幕后无冕 / 寿终正寝 / 满门倾覆 之一
+  "type": "幕后无冕",            // 善终:安稳权臣 / 幕后无冕；败亡:满门抄斩 / 抄家流放 / 破产败落 / 寿终正寝 / 众叛亲离
   "title": "结局标题",
   "summary": "150-250字凝练总结这一生的权谋历程、家族最终高度与儿孙结局,不要流水账",
   "epitaph": "一句史书风评价",
@@ -694,6 +698,13 @@ function systemPrompt(){
 }`;
 }
 
+const MAX_TURNS = 16;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
+function suggestStage(turn){
+  if(turn <= 4)  return "守局 · 前期";
+  if(turn <= 9)  return "布局 · 中期";
+  if(turn <= 13) return "入局 · 后期";
+  return "定局 · 结局";
+}
 function buildUserMessage(actionText){
   // 把当前数值快照 + 玩家行动一起发给模型,确保连贯
   const s = game.stats;
@@ -701,7 +712,15 @@ function buildUserMessage(actionText){
   if(game.turn === 0){
     return `开始新的一局(难度:${cfg.difficulty})。请先随机为本局家族起一个古风世家姓氏(放进 surname 字段),再按固定开局模板生成开局:交代该世家全貌、儿孙分工与名字、同时压来的开局三危机、以及那件皇家秘物的线索,并给出第一回合的 4 个抉择选项。这是第 1 回合。`;
   }
-  return `${snap}\n\n【老夫人本回合的决断】\n${actionText}\n\n请据此续写剧情并更新面板,给出下一回合的 4 个抉择(若已到结局则结束)。`;
+  // 节奏控制:把"即将进入的回合 / 建议阶段 / 距收官还有几回合"硬塞给模型,避免它一直停在前期、无限拖
+  const nextTurn = game.turn + 1;
+  const sug = suggestStage(nextTurn);
+  const remain = MAX_TURNS - nextTurn;
+  let pace = `\n\n【节奏控制】下一回合是第 ${nextTurn} 回合,本局以约 ${MAX_TURNS} 回合收官为基准,建议阶段应为「${sug}」——stage 字段必须推进到该阶段,绝不可滞留前期。`;
+  if(remain <= 0)      pace += `已到收官回合,本回合必须给出结局并设 ended=true。`;
+  else if(remain <= 2) pace += `距收尾仅约 ${remain} 回合,请加速收束,在最多 2 回合内导向结局(善终或败亡皆可,依局势而定)。`;
+  else                 pace += `距收尾约 ${remain} 回合,请让局势朝该阶段实质推进,不要原地踏步。`;
+  return `${snap}${pace}\n\n【老夫人本回合的决断】\n${actionText}\n\n请据此续写剧情并更新面板与阶段,给出下一回合的 4 个抉择(若已到结局则结束)。`;
 }
 
 async function askModel(actionText){
@@ -815,6 +834,29 @@ function applyResult(data){
       title:"灯枯油尽,撒手人寰",
       summary:`第 ${game.turn} 回合,${game.surname||"侯府"}府老夫人终因操劳过度、心力交瘁,于深夜阖目而逝。她未及看到棋局的最后落子,但满门荣辱已系于儿孙之手。`,
       epitaph:"机关算尽，终抵不过岁月催人。",
+      achievements: game.achievements.slice()
+    };
+  }
+
+  // 回合数硬兜底:即便 AI 不肯收尾,超过上限也强制收束,按当前局势判善终/败亡
+  if(!data.ended && game.turn >= MAX_TURNS + 3){
+    data.ended = true;
+    const s = game.stats;
+    let type, title, epitaph, good;
+    if(game.wealth <= 0){
+      good=false; type="破产败落"; title="金尽人散,家道中落"; epitaph="昔年钟鸣鼎食,终散作过眼云烟。";
+    } else if(s.fame < 25 && s.good < 25){
+      good=false; type="众叛亲离"; title="墙倒众推,门庭凋零"; epitaph="机关算尽太聪明,反误了卿卿性命。";
+    } else if((game.powerTag||"").includes("控皇") || (game.powerTag||"").includes("幕后")){
+      good=true; type="幕后无冕"; title="垂帘不坐,权倾朝野"; epitaph="无冕而王,功过任由后人评说。";
+    } else {
+      good=true; type="安稳权臣"; title="三朝柱石,富贵绵长"; epitaph="忠勤一世,簪缨世代不绝。";
+    }
+    data.ending = data.ending || {
+      type, title, epitaph,
+      summary:`历经 ${game.turn} 回合权谋周旋,${game.surname||""}府终于走到棋局尽头。` +
+        (good ? `老夫人以一己之力撑起满门,儿孙各承其志、文武有继,家族就此定格于此番荣光。`
+              : `老夫人虽机关算尽,终究没能护住满门荣华,昔日权势如沙堡崩塌。`),
       achievements: game.achievements.slice()
     };
   }
