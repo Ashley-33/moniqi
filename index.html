@@ -103,29 +103,31 @@
   .changes .c{font-size:12px;padding:4px 10px;border-radius:8px;background:#efe1c2;border:1px solid var(--line)}
   .changes .c.up{color:var(--jade)} .changes .c.down{color:var(--red-soft)}
 
-  /* ====== 选项 ====== */
-  .choices{padding:8px 16px 18px}
-  .choices .hint{font-size:12px;color:var(--ink-soft);padding:6px 6px 10px;display:flex;align-items:center;gap:6px}
+  /* ====== 选项（紧凑·手机优先） ====== */
+  .choices{padding:4px 12px 14px}
+  .choices .hint{font-size:11.5px;color:var(--ink-soft);padding:2px 4px 8px;display:flex;align-items:center;gap:5px}
   .opt{
-    display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
-    background:#fbf5e6;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:10px;
-    transition:.15s;
+    display:flex;gap:9px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
+    background:#fbf5e6;border:1.5px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:6px;
+    transition:.12s;
   }
   .opt:hover{border-color:var(--gold);background:#fdf8ec}
   .opt.sel{border-color:var(--red);background:#fbeee6;box-shadow:0 0 0 2px rgba(124,42,35,.12) inset}
   .opt .box{
-    width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex:none;margin-top:2px;
-    display:grid;place-items:center;font-size:13px;color:#fff;transition:.15s
+    width:19px;height:19px;border-radius:5px;border:2px solid var(--line);flex:none;margin-top:2px;
+    display:grid;place-items:center;font-size:12px;color:#fff;transition:.12s
   }
   .opt.sel .box{background:var(--red);border-color:var(--red)}
-  .opt .txt{flex:1}
-  .opt .rt{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:1px 8px;border-radius:6px;margin-bottom:4px}
+  .opt .txt{flex:1;min-width:0}
+  /* 路线标签内联在标题前,省一行高度 */
+  .opt .rt{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:1px;padding:1px 6px;border-radius:5px;margin-right:6px;vertical-align:2px}
   .rt-保守{background:#e3eee6;color:var(--jade)}
   .rt-强攻{background:#f6e0dc;color:var(--red)}
   .rt-隐忍{background:#ece3f0;color:#6b4b86}
   .rt-布局{background:#e6ecf6;color:#3c5a86}
-  .opt .ti{font-size:15px;font-weight:600;margin-bottom:3px}
-  .opt .de{font-size:13px;color:var(--ink-soft);line-height:1.6}
+  .opt .ti{display:inline;font-size:14.5px;font-weight:600}
+  .opt .de{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
+  .opt .nochoice{font-size:13px;color:var(--ink-soft);line-height:1.7;padding:10px 4px;text-align:center}
 
   .custom-wrap{padding:0 6px 8px}
   .custom-wrap textarea{
@@ -233,13 +235,15 @@
       <div class="seal" id="topSeal">權</div>
       <div class="t">老夫人权谋模拟器<small>宅斗 · 朝堂 · 边关 · 皇权 四线并行</small></div>
     </div>
-    <button class="iconbtn" id="gearBtn" title="设置">⚙</button>
+    <div style="display:flex;gap:8px">
+      <button class="iconbtn" id="restartTop" title="重开一局" style="display:none;width:auto;padding:0 12px;font-size:13px">↺ 重开</button>
+      <button class="iconbtn" id="gearBtn" title="设置">⚙</button>
+    </div>
   </div>
 
   <!-- ============ 开始页 ============ -->
   <div id="view-start" class="card">
     <div class="hero">
-      <div class="seal-big">權</div>
       <h1>老夫人权谋</h1>
       <p class="sub">你是侯府掌权老夫人,年近花甲,夫君早亡,独掌一族兴衰。<br/>儿孙各据文武商三线,皇权猜忌、宿敌反扑、玉玺秘藏。<br/>每一步抉择,都在保全满门与问鼎权柄之间。</p>
       <div class="lines">
@@ -327,9 +331,6 @@
       <div id="sceneArea"></div>
       <div id="choiceArea"></div>
     </div>
-    <div style="text-align:center;padding:16px 0 0">
-      <button class="iconbtn" id="restartBtn" title="重开一局" style="width:auto;padding:8px 16px;font-size:13px">↺ 重开一局</button>
-    </div>
   </div>
 
   <!-- ============ 结局页 ============ -->
@@ -404,14 +405,31 @@ $("provider").addEventListener("change", ()=>{
 /* ===================== 视图切换 ===================== */
 function show(view){
   ["start","settings","game","ending"].forEach(v=> $("view-"+v).classList.toggle("hidden", v!==view));
+  $("restartTop").style.display = (view==="game") ? "block" : "none";  // 重开按钮只在对局中露出
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function toast(msg){
   const t = $("toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
 }
+// 从剧情文本里兜底提取家族姓氏(模型常忘了回 surname 字段)
+const SURNAME_BAD = new Set(["侯","公","王","相","皇","宫","本","贵","世","国","官","太","老","府","开","回","相府"]);
+function extractSurname(text){
+  if(!text) return "";
+  const re = /([一-龥]{1,2})府/g; let m;
+  while((m = re.exec(text))){
+    const s = m[1];
+    if(!SURNAME_BAD.has(s) && !SURNAME_BAD.has(s[s.length-1])) return s.slice(0,2);
+  }
+  const m2 = text.match(/姓([一-龥])/) || text.match(/([一-龥]{1,2})(?:老夫人|老封君|老太君)/);
+  return m2 ? m2[1] : "";
+}
 // 顶部印章:开局后显示当前家族姓氏首字,否则显示通用「權」
 function updateSeal(){
+  if(game && !game.surname){
+    const s = extractSurname(game.lastScene);
+    if(s) game.surname = s;
+  }
   $("topSeal").textContent = (game && game.surname) ? game.surname[0] : "權";
 }
 
@@ -446,6 +464,7 @@ function loadGame(){ try{ return JSON.parse(localStorage.getItem("lfr_save")); }
 /* ===================== 面板渲染 ===================== */
 function clampStat(v){ return Math.max(0, Math.min(100, Math.round(v))); }
 function renderPanel(){
+  updateSeal();   // 每回合刷新顶部印章为当前家族姓氏
   $("stageTag").textContent = game.stage;
   $("turnTag").textContent = "第 " + game.turn + " 回合";
   const grid = $("statsGrid");
@@ -497,23 +516,28 @@ function renderScene(data){
 function renderChoices(choices){
   selected = new Set();
   const ca = $("choiceArea");
-  const opts = (choices||[]).map((c,i)=>`
+  // 过滤空白项,把干净列表写回 game.lastChoices,保证下标与提交一致
+  const list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
+  game.lastChoices = list;
+  const empty = list.length === 0;
+  const opts = list.map((c,i)=>`
     <button class="opt" data-i="${i}">
       <span class="box">✓</span>
       <span class="txt">
-        <span class="rt rt-${c.route||'布局'}">${c.route||'布局'}</span>
-        <div class="ti">${escapeHtml(c.title||'')}</div>
+        <span class="rt rt-${c.route||'布局'}">${c.route||'布局'}</span><span class="ti">${escapeHtml(c.title||'')}</span>
         <div class="de">${escapeHtml(c.detail||'')}</div>
       </span>
     </button>`).join("");
+  const emptyBox = `<div class="nochoice">这一回合没收到选项。可在下方<b>自拟一招</b>继续,或点「换一批选项」让 AI 重出。</div>`;
   ca.innerHTML = `
     <div class="choices">
-      <div class="hint">⚜ 可多选合并行动（同时推进多条线）,也可只选一项,或在下方自拟一招</div>
-      ${opts}
+      <div class="hint">⚜ 可多选合并（同时推进多条线）,也可只选一项,或在下方自拟一招</div>
+      ${empty ? emptyBox : opts}
       <div class="custom-wrap">
-        <textarea id="customAct" placeholder="（可选）自拟一招:写下你想让老夫人做的事,与上方勾选项一并执行……"></textarea>
+        <textarea id="customAct" placeholder="（可选）自拟一招:写下你想让老夫人做的事,与上方勾选一并执行……"></textarea>
       </div>
       <div class="actbar">
+        ${empty ? '<button class="btn btn-ghost" id="regenBtn" style="flex:1">↻ 换一批选项</button>' : ''}
         <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
       </div>
     </div>`;
@@ -524,7 +548,19 @@ function renderChoices(choices){
       else { selected.add(i); btn.classList.add("sel"); }
     });
   });
+  if(empty) $("regenBtn").addEventListener("click", regenChoices);
   $("commitBtn").addEventListener("click", commitTurn);
+}
+// 模型偶尔不给选项时,催它只补出本回合的 4 个抉择,不推进新剧情
+async function regenChoices(){
+  showLoading("正在重新铺开抉择……");
+  try{
+    const data = await askModel("（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合的 4 个抉择选项写进 choices,scene 用一句话承接即可,不要推进新剧情、不要结束游戏。）");
+    applyResult(data);
+  }catch(e){
+    showError("没取到选项:"+e.message);
+    const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
+  }
 }
 function escapeHtml(s){ return (s||"").replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
@@ -717,7 +753,7 @@ function applyResult(data){
     });
   }
   if(typeof data.wealth === "number") game.wealth = Math.max(0, Math.round(data.wealth));
-  if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/府$/,"").slice(0,2); updateSeal(); }
+  if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/[府氏]$/,"").slice(0,2); }
   if(data.stage) game.stage = data.stage;
   if(data.powerTag) game.powerTag = data.powerTag;
   if(data.powerDesc) game.powerDesc = data.powerDesc;
@@ -756,13 +792,11 @@ function applyResult(data){
 
 /* ===================== 回合提交 ===================== */
 async function commitTurn(){
-  // 收集所选 + 自拟
+  // 收集所选项
   const picks = [];
   selected.forEach(i=>{ const c = game.lastChoices[i]; if(c) picks.push(`【${c.route}】${c.title}`); });
-  const custom = ($("customAct")?.value||"").trim();
-  if(picks.length===0 && !custom){ toast("先勾选至少一项,或写下自拟行动"); return; }
-  let action = picks.length ? picks.join("；") : "";
-  if(custom) action += (action? "；另外:" : "") + custom;
+  if(picks.length===0){ toast("先勾选至少一项"); return; }
+  const action = picks.join("；");
 
   showLoading("落子已定,正在推演朝局……");
   try{
@@ -840,7 +874,7 @@ $("continueBtn").addEventListener("click", ()=>{
   renderScene({ scene:game.lastScene, stage:game.stage, changes:[] });
   renderChoices(game.lastChoices);
 });
-$("restartBtn").addEventListener("click", ()=>{ if(confirm("确定重开一局?当前进度会被覆盖。")) startNewGame(); });
+$("restartTop").addEventListener("click", ()=>{ if(confirm("确定重开一局?当前进度会被覆盖。")) startNewGame(); });
 $("endingRestartBtn").addEventListener("click", startNewGame);
 
 function refreshStartNotice(){
