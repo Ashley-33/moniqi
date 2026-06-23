@@ -552,13 +552,21 @@ function renderScene(data){
     </div>
     ${changesHtml}`;
 }
+// 模型实在不给选项时的前端通用兜底:措辞泛化,任何局势都说得通,保证玩家总能继续
+const FALLBACK_CHOICES = [
+  {route:"保守", title:"按兵不动,静观其变", detail:"暂不轻举妄动,守稳眼前局面"},
+  {route:"强攻", title:"主动出击,先发制人", detail:"趁势而上,打对手一个措手不及"},
+  {route:"隐忍", title:"忍让周旋,暗中布置", detail:"表面退让,私下悄然落子"},
+  {route:"布局", title:"广布耳目,徐图长远", detail:"安插眼线、铺垫后手,谋划大局"},
+];
 function renderChoices(choices){
   selected = new Set();
   const ca = $("choiceArea");
-  // 过滤空白项,把干净列表写回 game.lastChoices,保证下标与提交一致
-  const list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
+  // 过滤空白项;若模型没给任何选项,用前端通用选项兜底,保证每回合都能继续
+  let list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
+  const usedFallback = list.length === 0;
+  if(usedFallback) list = FALLBACK_CHOICES.slice();
   game.lastChoices = list;
-  const empty = list.length === 0;
   const opts = list.map((c,i)=>`
     <button class="opt" data-i="${i}">
       <span class="box">✓</span>
@@ -567,13 +575,14 @@ function renderChoices(choices){
         <div class="de">${escapeHtml(c.detail||'')}</div>
       </span>
     </button>`).join("");
-  const emptyBox = `<div class="nochoice">这一回合没收到选项,点「换一批选项」让 AI 重出本回合抉择。</div>`;
+  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对,或点「换一批」让它重出。</div>` : "";
   ca.innerHTML = `
     <div class="choices">
       <div class="hint">⚜ 可多选合并推进多条线——但选得越多,康健与私财耗损越重,量力而行</div>
-      ${empty ? emptyBox : opts}
+      ${fbHint}
+      ${opts}
       <div class="actbar">
-        ${empty ? '<button class="btn btn-ghost" id="regenBtn" style="flex:1">↻ 换一批选项</button>' : ''}
+        ${usedFallback ? '<button class="btn btn-ghost" id="regenBtn" style="flex:1">↻ 换一批选项</button>' : ''}
         <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
       </div>
     </div>`;
@@ -584,7 +593,7 @@ function renderChoices(choices){
       else { selected.add(i); btn.classList.add("sel"); }
     });
   });
-  if(empty) $("regenBtn").addEventListener("click", regenChoices);
+  if(usedFallback) $("regenBtn").addEventListener("click", regenChoices);
   $("commitBtn").addEventListener("click", commitTurn);
 }
 // 模型偶尔不给选项时,催它只补出本回合的 4 个抉择,不推进新剧情
@@ -594,8 +603,8 @@ async function regenChoices(){
     const data = await askModel("（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合恰好 4 个抉择选项写进 choices(覆盖保守/强攻/隐忍/布局),scene 字段留空,不要推进新剧情、不要改数值、不要结束游戏。）");
     const clean = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
     if(clean.length === 0){
-      showError("还是没取到选项,点下面再试一次。");
-      const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
+      renderChoices([]);   // 重出仍失败:用前端通用选项兜底,保证能继续推进
+      saveGame();
       return;
     }
     renderChoices(data.choices);   // 只补选项,不动面板与回合数
