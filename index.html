@@ -129,13 +129,6 @@
   .opt .de{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
   .opt .nochoice{font-size:13px;color:var(--ink-soft);line-height:1.7;padding:10px 4px;text-align:center}
 
-  .custom-wrap{padding:0 6px 8px}
-  .custom-wrap textarea{
-    width:100%;border:1.5px dashed var(--line);border-radius:10px;padding:10px 12px;font:inherit;
-    font-size:14px;background:#fffaf0;resize:vertical;min-height:46px;color:var(--ink)
-  }
-  .custom-wrap textarea:focus{outline:none;border-color:var(--gold)}
-
   .actbar{display:flex;gap:10px;padding:4px 6px 6px}
   .btn{
     flex:1;border:none;border-radius:12px;padding:14px;font:inherit;font-size:16px;font-weight:700;
@@ -254,7 +247,6 @@
     .opt .box{width:18px;height:18px}
     .opt .ti{font-size:14px}
     .opt .de{font-size:12px;margin-top:1px}
-    .custom-wrap textarea{font-size:13.5px;min-height:42px;padding:9px 11px}
 
     /* 按钮 */
     .btn{padding:12px;font-size:15px;letter-spacing:1px}
@@ -575,14 +567,11 @@ function renderChoices(choices){
         <div class="de">${escapeHtml(c.detail||'')}</div>
       </span>
     </button>`).join("");
-  const emptyBox = `<div class="nochoice">这一回合没收到选项。可在下方<b>自拟一招</b>继续,或点「换一批选项」让 AI 重出。</div>`;
+  const emptyBox = `<div class="nochoice">这一回合没收到选项,点「换一批选项」让 AI 重出本回合抉择。</div>`;
   ca.innerHTML = `
     <div class="choices">
-      <div class="hint">⚜ 可多选合并（同时推进多条线）,也可只选一项,或在下方自拟一招</div>
+      <div class="hint">⚜ 可多选合并推进多条线——但选得越多,康健与私财耗损越重,量力而行</div>
       ${empty ? emptyBox : opts}
-      <div class="custom-wrap">
-        <textarea id="customAct" placeholder="（可选）自拟一招:写下你想让老夫人做的事,与上方勾选一并执行……"></textarea>
-      </div>
       <div class="actbar">
         ${empty ? '<button class="btn btn-ghost" id="regenBtn" style="flex:1">↻ 换一批选项</button>' : ''}
         <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
@@ -602,8 +591,15 @@ function renderChoices(choices){
 async function regenChoices(){
   showLoading("正在重新铺开抉择……");
   try{
-    const data = await askModel("（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合的 4 个抉择选项写进 choices,scene 用一句话承接即可,不要推进新剧情、不要结束游戏。）");
-    applyResult(data);
+    const data = await askModel("（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合恰好 4 个抉择选项写进 choices(覆盖保守/强攻/隐忍/布局),scene 字段留空,不要推进新剧情、不要改数值、不要结束游戏。）");
+    const clean = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
+    if(clean.length === 0){
+      showError("还是没取到选项,点下面再试一次。");
+      const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
+      return;
+    }
+    renderChoices(data.choices);   // 只补选项,不动面板与回合数
+    saveGame();
   }catch(e){
     showError("没取到选项:"+e.message);
     const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
@@ -658,14 +654,15 @@ function systemPrompt(){
 - 家族权势(powerTag):隐藏核心,三档递进——地方割据 / 朝堂权臣 / 幕后控皇。
 
 【规则】
-1. 每回合给 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一)。玩家可多选合并执行,也可能附带自拟行动。
-2. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,严格控制在 100-160 字,开局回合也不超过 220 字),只交代关键过程与利弊后果,语言凝练、点到为止,不要铺陈赘述;然后据此更新全部数值(stats 给更新后的绝对值)。选项的 detail 每条不超过 25 字。
-3. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
-4. 明面忠君、暗中囤兵布局收买谋皇权,全部合规,符合隐忍权谋人设。
-5. 难度=${cfg.difficulty}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
-6. 随剧情自然推进阶段(stage 字段)。约 12-18 回合走向结局;当进入定局并尘埃落定,或 health<=0,或全族败亡时,设 ended=true 并给出 ending。
-7. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
-8. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
+1. 每回合必须给出恰好 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一);choices 数组在任何非结局回合都绝不可为空、不可少于 4 项。玩家会勾选其中一项或多项合并执行。
+2. 【多选惩罚·必须严格执行】玩家同时勾选的行动越多,代表老夫人分身多线、殚精竭虑、四处洒银,康健与私财的消耗必须随勾选数量显著叠加:选 1 项按正常消耗;选 2 项时康健与私财的扣减约为 1.5 倍;选 3 项约 2 倍;选 4 项约 2.5-3 倍。多线带来的正向增益虽然也叠加,但边际递减——绝不能让"每回合全选 4 项"变成无脑稳赚的最优解,多选必须明显更伤身体、更烧钱,逼玩家权衡取舍。系统会在玩家行动文本里注明本回合选了几项,据此核算。
+3. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,严格控制在 100-160 字,开局回合也不超过 220 字),只交代关键过程与利弊后果,语言凝练、点到为止,不要铺陈赘述;然后据此更新全部数值(stats 给更新后的绝对值)。选项的 detail 每条不超过 25 字。
+4. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
+5. 明面忠君、暗中囤兵布局收买谋皇权,全部合规,符合隐忍权谋人设。
+6. 难度=${cfg.difficulty}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
+7. 随剧情自然推进阶段(stage 字段)。约 12-18 回合走向结局;当进入定局并尘埃落定,或 health<=0,或全族败亡时,设 ended=true 并给出 ending。
+8. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
+9. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
 {
@@ -731,7 +728,7 @@ async function askModel(actionText){
 }
 
 async function callOpenAICompatible(base, key, model, messages){
-  const body = { model, messages, temperature:0.9, response_format:{ type:"json_object" } };
+  const body = { model, messages, temperature:0.9, max_tokens:2200, response_format:{ type:"json_object" } };
   let r;
   try{
     r = await fetch(base, { method:"POST",
@@ -744,7 +741,7 @@ async function callOpenAICompatible(base, key, model, messages){
       try{
         const r2 = await fetch(base,{method:"POST",
           headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
-          body:JSON.stringify({ model, messages, temperature:0.9 })});
+          body:JSON.stringify({ model, messages, temperature:0.9, max_tokens:2200 })});
         if(r2.ok){ const d2=await r2.json(); return JSON.parse(extractJson(d2?.choices?.[0]?.message?.content||"")); }
       }catch{}
     }
@@ -766,7 +763,7 @@ async function callGemini(key, model, messages){
   const body = {
     system_instruction:{ parts:[{ text:sys }] },
     contents,
-    generationConfig:{ responseMimeType:"application/json", temperature:0.9 }
+    generationConfig:{ responseMimeType:"application/json", temperature:0.9, maxOutputTokens:2200 }
   };
   let r;
   try{ r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }
@@ -833,6 +830,15 @@ function applyResult(data){
   }
   renderPanel();
   renderScene(data);
+  // 模型偶尔漏给选项:自动补一次,不打断玩家(防死循环只自动重试一次)
+  const cleanChoices = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
+  if(cleanChoices.length === 0 && !game._regenTried){
+    game._regenTried = true;
+    saveGame();
+    regenChoices();
+    return;
+  }
+  game._regenTried = false;
   renderChoices(data.choices);
   saveGame();
 }
@@ -843,7 +849,9 @@ async function commitTurn(){
   const picks = [];
   selected.forEach(i=>{ const c = game.lastChoices[i]; if(c) picks.push(`【${c.route}】${c.title}`); });
   if(picks.length===0){ toast("先勾选至少一项"); return; }
-  const action = picks.join("；");
+  const n = picks.length;
+  const action = picks.join("；") +
+    (n>1 ? `\n（本回合老夫人同时推进 ${n} 项行动,请按多选惩罚规则,把康健与私财的消耗按 ${n} 项显著叠加。）` : "");
 
   showLoading("落子已定,正在推演朝局……");
   try{
