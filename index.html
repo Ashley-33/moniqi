@@ -221,8 +221,61 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   @media (max-width:560px){
-    .stats{grid-template-columns:repeat(2,1fr)}
+    .wrap{padding:11px 10px 44px}
+
+    /* 顶部标题条 */
+    .topbar{margin-bottom:10px}
+    .brand .seal{width:32px;height:32px;border-radius:8px;font-size:15px}
+    .brand .t{font-size:16px;letter-spacing:1px}
+    .brand .t small{font-size:10px;letter-spacing:0}
+    .iconbtn{width:36px;height:36px;font-size:16px}
+
+    /* 数值面板 */
+    .panel{padding:10px 12px;margin-bottom:10px;border-radius:13px;top:6px}
+    .panel-head{margin-bottom:8px}
+    .panel-head .stage{padding:2px 10px;letter-spacing:1px}
+    .stats{grid-template-columns:repeat(2,1fr);gap:8px 12px}
+    .stat .lab{font-size:11px;margin-bottom:2px}
+    .bar{height:6px}
+    .power-row{margin-top:8px;padding-top:8px;gap:7px}
+    .power-row .desc{font-size:11px;min-width:0;flex-basis:100%}
+
+    /* 剧情 */
+    .scene{padding:15px 15px 4px}
+    .scene .meta{font-size:11px;margin-bottom:6px}
+    .scene .body{font-size:15px;line-height:1.8}
+    .changes{margin:10px 15px 2px;gap:6px}
+    .changes .c{font-size:11px;padding:3px 8px}
+
+    /* 选项 */
+    .choices{padding:4px 10px 12px}
+    .choices .hint{font-size:11px;padding:2px 2px 7px}
+    .opt{padding:7px 10px;margin-bottom:5px;gap:8px}
+    .opt .box{width:18px;height:18px}
+    .opt .ti{font-size:14px}
+    .opt .de{font-size:12px;margin-top:1px}
+    .custom-wrap textarea{font-size:13.5px;min-height:42px;padding:9px 11px}
+
+    /* 按钮 */
+    .btn{padding:12px;font-size:15px;letter-spacing:1px}
+    .btn-ghost{padding:12px 14px}
+
+    /* 开始页 */
+    .hero{padding:30px 18px 22px}
+    .hero .seal-big{width:72px;height:72px;font-size:28px;margin-bottom:14px}
     .hero h1{font-size:24px;letter-spacing:4px}
+    .hero .sub{font-size:13px;line-height:1.8}
+    .hero .lines{margin:14px 0 18px;gap:6px}
+    .hero .lines span{font-size:11px;padding:3px 10px}
+    .start-actions{padding:0 18px 26px}
+    .foot{padding:0 18px 20px}
+
+    /* 设置页 / 结局页 */
+    .card.pad{padding:18px}
+    .ending{padding:24px 18px 8px}
+    .ending h1{font-size:23px}
+    .ending .summary{font-size:14px;line-height:1.9}
+    .final-stats{padding:6px 18px 18px}
   }
 </style>
 </head>
