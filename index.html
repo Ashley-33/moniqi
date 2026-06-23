@@ -367,10 +367,6 @@
   <div id="view-game" class="hidden">
     <!-- 数值面板 -->
     <div class="panel" id="panel">
-      <div class="panel-head">
-        <span class="stage" id="stageTag">守局 · 前期</span>
-        <span class="turn" id="turnTag">第 1 回合</span>
-      </div>
       <div class="stats" id="statsGrid"><!-- JS 注入 --></div>
       <div class="power-row">
         <span class="k">家族权势</span>
@@ -517,9 +513,7 @@ function loadGame(){ try{ return JSON.parse(localStorage.getItem("lfr_save")); }
 /* ===================== 面板渲染 ===================== */
 function clampStat(v){ return Math.max(0, Math.min(100, Math.round(v))); }
 function renderPanel(){
-  updateSeal();   // 每回合刷新顶部印章为当前家族姓氏
-  $("stageTag").textContent = game.stage;
-  $("turnTag").textContent = "第 " + game.turn + " 回合";
+  updateSeal();   // 每回合刷新顶部印章为当前家族姓氏(阶段/回合信息已并入剧情区 meta,不再单列)
   const grid = $("statsGrid");
   // 4 项进度条 + 私财数字 + 情报已在4项内,私财单列
   let html = "";
