@@ -547,7 +547,7 @@ function renderScene(data){
   }
   sa.innerHTML = `
     <div class="scene">
-      <div class="meta">${data.stage||game.stage}　·　第 ${game.turn} 回合</div>
+      <div class="meta">${game.stage}　·　第 ${game.turn} 回合</div>
       <div class="body">${escapeHtml(data.scene||"").replace(/\n/g,"<br/>")}</div>
     </div>
     ${changesHtml}`;
@@ -575,14 +575,13 @@ function renderChoices(choices){
         <div class="de">${escapeHtml(c.detail||'')}</div>
       </span>
     </button>`).join("");
-  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对,或点「换一批」让它重出。</div>` : "";
+  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对继续。</div>` : "";
   ca.innerHTML = `
     <div class="choices">
       <div class="hint">⚜ 可多选合并推进多条线——但选得越多,康健与私财耗损越重,量力而行</div>
       ${fbHint}
       ${opts}
       <div class="actbar">
-        ${usedFallback ? '<button class="btn btn-ghost" id="regenBtn" style="flex:1">↻ 换一批选项</button>' : ''}
         <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
       </div>
     </div>`;
@@ -593,7 +592,6 @@ function renderChoices(choices){
       else { selected.add(i); btn.classList.add("sel"); }
     });
   });
-  if(usedFallback) $("regenBtn").addEventListener("click", regenChoices);
   $("commitBtn").addEventListener("click", commitTurn);
 }
 // 模型偶尔不给选项时,催它只补出本回合的 4 个抉择,不推进新剧情
@@ -657,7 +655,7 @@ function systemPrompt(){
 【属性面板】(0-100,私财除外)
 - good 善恶:心软仁慈涨,暗中控帝/清洗政敌/私囤兵权降。决定历史风评。
 - fame 名声:忠君涨,权臣干政/废立皇帝大幅掉。
-- health 康健:操劳国事/谋划阴谋扣,家族兴旺/诸事安稳加。归零=寿终正寝立即落幕。符合老年衰老逻辑,随回合自然缓降。
+- health 康健:老夫人年事已高,康健只会逐年下降、绝不回升。操劳国事/谋划阴谋扣得多;静心调养/诸事安稳也只能延缓损耗、扣得少,但绝不会增加。系统每回合都会自然衰减一点(前端强制),所以不要写出让康健上涨的剧情或数值,修养类选项应表述为「调养以减缓损耗」而非「恢复康健」。归零=寿终正寝立即落幕。
 - intel 情报:眼线能力(皇宫/朝堂/边关/漕帮),越高越能预判阴谋避陷阱。
 - wealth 私财(白银万两):漕运/盐铁/海外金矿/商路而来;可买内侍、养私兵、拉拢朝臣。
 - 家族权势(powerTag):隐藏核心,三档递进——地方割据 / 朝堂权臣 / 幕后控皇。
@@ -818,19 +816,36 @@ async function readErr(r){
 /* ===================== 应用模型返回，更新游戏 ===================== */
 function applyResult(data){
   const wasOpening = (game.turn === 0);   // 开局回合:不显示与初始默认值的"增减"
+  const prevHealth = game.stats.health;   // 用于约束康健只减不增
   game.prevStats = Object.assign({}, game.stats, { _wealth: game.wealth });
   if(data.stats){
-    ["good","fame","health","intel"].forEach(k=>{
+    ["good","fame","intel"].forEach(k=>{
       if(typeof data.stats[k] === "number") game.stats[k] = clampStat(data.stats[k]);
     });
+    // 康健:老夫人年事已高,只减不增——AI 给的值不得高于上回合(修养至多维持),开局除外;再叠加每回合自然衰老
+    if(wasOpening){
+      if(typeof data.stats.health === "number") game.stats.health = clampStat(data.stats.health);
+    } else {
+      let h = (typeof data.stats.health === "number") ? clampStat(data.stats.health) : prevHealth;
+      h = Math.min(h, prevHealth);                       // 修养也不让康健回升
+      const decay = (cfg.difficulty === "凶险") ? 2 : 1; // 逐回合自然衰老
+      game.stats.health = clampStat(h - decay);
+      // 修正 changes 里的康健项,确保剧情下方标签与实际一致(必为下降)
+      const realDelta = game.stats.health - prevHealth;
+      data.changes = Array.isArray(data.changes) ? data.changes.filter(c=> c && c.name !== "康健") : [];
+      if(realDelta !== 0){
+        data.changes.push({ name:"康健", delta:realDelta,
+          reason:(realDelta <= -decay-1) ? "操劳耗神,日渐衰朽" : "年事渐高,精力日减" });
+      }
+    }
   }
   if(typeof data.wealth === "number") game.wealth = Math.max(0, Math.round(data.wealth));
   if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/[府氏]$/,"").slice(0,2); }
-  if(data.stage) game.stage = data.stage;
   if(data.powerTag) game.powerTag = data.powerTag;
   if(data.powerDesc) game.powerDesc = data.powerDesc;
   if(Array.isArray(data.newAchievements)) data.newAchievements.forEach(a=>{ if(a && !game.achievements.includes(a)) game.achievements.push(a); });
   game.turn += 1;
+  game.stage = suggestStage(game.turn);   // 阶段按回合硬控,AI 老停在前期,这里强制推进
   game.lastScene = data.scene || "";
   game.lastChoices = data.choices || [];
   if(wasOpening){ game.prevStats = null; data.changes = []; }  // 开局不计增减
