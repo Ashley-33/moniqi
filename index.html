@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>老夫人权谋模拟器</title>
+<title>老夫人模拟器</title>
 <style>
   :root{
     --ink:#2b2018;            /* 主文字 */
@@ -30,11 +30,11 @@
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+  .wrap{max-width:760px;margin:0 auto;padding:11px 10px 44px}
   .hidden{display:none !important}
 
   /* 顶部标题条 */
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .brand{display:flex;align-items:center;gap:10px;color:#f3e6c8}
   .brand .seal{
     width:38px;height:38px;border-radius:9px;display:grid;place-items:center;
@@ -57,6 +57,32 @@
   }
   .card.pad{padding:22px}
 
+  /* ====== 首页 · 模式选择 ====== */
+  .home-hero{text-align:center;padding:14px 8px 18px}
+  .home-hero h1{margin:0;font-size:25px;letter-spacing:5px;color:var(--ink)}
+  .home-hero p{margin:8px 0 0;font-size:13px;color:var(--ink-soft);letter-spacing:1px}
+  .mode-list{display:flex;flex-direction:column;gap:12px}
+  .mode-card{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;
+    background:#fbf5e6;border:1.5px solid var(--line);border-radius:14px;padding:16px 16px;
+    font:inherit;color:var(--ink);transition:.15s;
+  }
+  .mode-card:hover{border-color:var(--gold);background:#fdf8ec;transform:translateY(-1px)}
+  .mc-seal{
+    width:52px;height:52px;flex:none;border-radius:13px;display:grid;place-items:center;
+    font-size:26px;font-weight:700;color:#f6e3b8;box-shadow:0 4px 14px rgba(0,0,0,.2);
+    border:1px solid rgba(255,255,255,.15)
+  }
+  .mc-seal.q{background:linear-gradient(145deg,var(--red),#5e1d18)}
+  .mc-seal.r{background:linear-gradient(145deg,var(--jade),#2c4d3c)}
+  .mc-body{flex:1;min-width:0}
+  .mc-name{font-size:17px;font-weight:700;letter-spacing:1px}
+  .mc-name .cont{font-size:11px;font-weight:700;color:var(--jade);margin-left:8px}
+  .mc-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:4px}
+  .mc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .mc-tags span{font-size:10.5px;color:var(--gold-deep);border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:#f3ead7}
+  .mc-arrow{font-size:24px;color:var(--gold);flex:none}
+
   /* ====== 数值面板 ====== */
   .panel{
     background:linear-gradient(180deg,#fbf4e3,#f1e4c9);
@@ -64,12 +90,6 @@
     box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;position:sticky;top:8px;z-index:20;
     backdrop-filter:blur(2px);
   }
-  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .panel-head .stage{
-    font-size:12px;color:var(--red);border:1px solid var(--red);border-radius:999px;
-    padding:3px 12px;letter-spacing:2px;background:rgba(124,42,35,.06)
-  }
-  .panel-head .turn{font-size:12px;color:var(--ink-soft)}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px}
   .stat .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:3px}
   .stat .lab b{color:var(--ink);font-weight:600}
@@ -80,8 +100,6 @@
   .b-fame > i{background:linear-gradient(90deg,#cf9b46,#a8761f)}
   .b-health > i{background:linear-gradient(90deg,#c9564b,#9a2f26)}
   .b-intel > i{background:linear-gradient(90deg,#5d7fb0,#3c5a86)}
-  .stat.delta-up .num{color:var(--jade)}
-  .stat.delta-down .num{color:var(--red-soft)}
   .stat .chip{font-size:11px;font-weight:700}
   .stat .chip.up{color:var(--jade)} .stat .chip.down{color:var(--red-soft)}
   .power-row{margin-top:11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -98,7 +116,6 @@
   .scene{padding:20px 20px 6px}
   .scene .meta{font-size:12px;color:var(--gold-deep);letter-spacing:2px;margin-bottom:8px}
   .scene .body{font-size:16px;line-height:2;color:var(--ink);white-space:pre-wrap;word-break:break-word}
-  .scene .body::first-letter{}
   .changes{margin:14px 20px 4px;display:flex;flex-wrap:wrap;gap:8px}
   .changes .c{font-size:12px;padding:4px 10px;border-radius:8px;background:#efe1c2;border:1px solid var(--line)}
   .changes .c.up{color:var(--jade)} .changes .c.down{color:var(--red-soft)}
@@ -121,10 +138,10 @@
   .opt .txt{flex:1;min-width:0}
   /* 路线标签内联在标题前,省一行高度 */
   .opt .rt{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:1px;padding:1px 6px;border-radius:5px;margin-right:6px;vertical-align:2px}
-  .rt-保守{background:#e3eee6;color:var(--jade)}
-  .rt-强攻{background:#f6e0dc;color:var(--red)}
-  .rt-隐忍{background:#ece3f0;color:#6b4b86}
-  .rt-布局{background:#e6ecf6;color:#3c5a86}
+  .rt-保守,.rt-持家{background:#e3eee6;color:var(--jade)}
+  .rt-强攻,.rt-严教{background:#f6e0dc;color:var(--red)}
+  .rt-隐忍,.rt-慈和{background:#ece3f0;color:#6b4b86}
+  .rt-布局,.rt-张罗{background:#e6ecf6;color:#3c5a86}
   .opt .ti{display:inline;font-size:14.5px;font-weight:600}
   .opt .de{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
   .opt .nochoice{font-size:13px;color:var(--ink-soft);line-height:1.7;padding:10px 4px;text-align:center}
@@ -144,9 +161,11 @@
   .hero{text-align:center;padding:40px 24px 30px}
   .hero .seal-big{
     width:88px;height:88px;border-radius:20px;margin:0 auto 18px;display:grid;place-items:center;
-    background:linear-gradient(145deg,var(--red),#531a15);color:#f6e3b8;font-size:34px;font-weight:700;
+    color:#f6e3b8;font-size:34px;font-weight:700;
     box-shadow:0 10px 30px rgba(124,42,35,.4);border:1px solid rgba(255,255,255,.15)
   }
+  .hero .seal-big.q{background:linear-gradient(145deg,var(--red),#531a15)}
+  .hero .seal-big.r{background:linear-gradient(145deg,var(--jade),#274635)}
   .hero h1{margin:0;font-size:28px;letter-spacing:6px;color:var(--ink)}
   .hero .sub{color:var(--ink-soft);font-size:14px;margin:10px 0 0;line-height:1.9}
   .hero .lines{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:18px 0 24px}
@@ -215,32 +234,31 @@
 
   @media (max-width:560px){
     .wrap{padding:11px 10px 44px}
-
-    /* 顶部标题条 */
     .topbar{margin-bottom:10px}
     .brand .seal{width:32px;height:32px;border-radius:8px;font-size:15px}
     .brand .t{font-size:16px;letter-spacing:1px}
     .brand .t small{font-size:10px;letter-spacing:0}
     .iconbtn{width:36px;height:36px;font-size:16px}
 
-    /* 数值面板 */
+    .home-hero{padding:10px 6px 14px}
+    .home-hero h1{font-size:22px;letter-spacing:4px}
+    .mode-card{padding:13px 13px;gap:11px}
+    .mc-seal{width:46px;height:46px;font-size:23px}
+    .mc-name{font-size:16px}
+
     .panel{padding:10px 12px;margin-bottom:10px;border-radius:13px;top:6px}
-    .panel-head{margin-bottom:8px}
-    .panel-head .stage{padding:2px 10px;letter-spacing:1px}
     .stats{grid-template-columns:repeat(2,1fr);gap:8px 12px}
     .stat .lab{font-size:11px;margin-bottom:2px}
     .bar{height:6px}
     .power-row{margin-top:8px;padding-top:8px;gap:7px}
     .power-row .desc{font-size:11px;min-width:0;flex-basis:100%}
 
-    /* 剧情 */
     .scene{padding:15px 15px 4px}
     .scene .meta{font-size:11px;margin-bottom:6px}
     .scene .body{font-size:15px;line-height:1.8}
     .changes{margin:10px 15px 2px;gap:6px}
     .changes .c{font-size:11px;padding:3px 8px}
 
-    /* 选项 */
     .choices{padding:4px 10px 12px}
     .choices .hint{font-size:11px;padding:2px 2px 7px}
     .opt{padding:7px 10px;margin-bottom:5px;gap:8px}
@@ -248,11 +266,9 @@
     .opt .ti{font-size:14px}
     .opt .de{font-size:12px;margin-top:1px}
 
-    /* 按钮 */
     .btn{padding:12px;font-size:15px;letter-spacing:1px}
     .btn-ghost{padding:12px 14px}
 
-    /* 开始页 */
     .hero{padding:30px 18px 22px}
     .hero .seal-big{width:72px;height:72px;font-size:28px;margin-bottom:14px}
     .hero h1{font-size:24px;letter-spacing:4px}
@@ -262,7 +278,6 @@
     .start-actions{padding:0 18px 26px}
     .foot{padding:0 18px 20px}
 
-    /* 设置页 / 结局页 */
     .card.pad{padding:18px}
     .ending{padding:24px 18px 8px}
     .ending h1{font-size:23px}
@@ -277,30 +292,40 @@
   <!-- 顶部标题条 -->
   <div class="topbar">
     <div class="brand">
-      <div class="seal" id="topSeal">權</div>
-      <div class="t">老夫人权谋模拟器<small>宅斗 · 朝堂 · 边关 · 皇权 四线并行</small></div>
+      <div class="seal" id="topSeal">老</div>
+      <div class="t" id="brandTitle">老夫人模拟器<small id="brandSub">选一种人生</small></div>
     </div>
     <div style="display:flex;gap:8px">
+      <button class="iconbtn" id="homeTop" title="返回首页" style="display:none;width:auto;padding:0 12px;font-size:13px">⌂ 首页</button>
       <button class="iconbtn" id="restartTop" title="重开一局" style="display:none;width:auto;padding:0 12px;font-size:13px">↺ 重开</button>
       <button class="iconbtn" id="gearBtn" title="设置">⚙</button>
     </div>
   </div>
 
-  <!-- ============ 开始页 ============ -->
-  <div id="view-start" class="card">
+  <!-- ============ 首页 · 模式选择 ============ -->
+  <div id="view-home" class="card pad">
+    <div class="home-hero">
+      <h1>老夫人模拟器</h1>
+      <p>同是花甲老妇,执掌的却是两种人生</p>
+    </div>
+    <div class="mode-list" id="modeList"><!-- JS 注入 --></div>
+    <p class="foot" style="padding-bottom:4px">纯本地运行 · 剧情与 key 都只待在这台设备,不上传任何服务器</p>
+  </div>
+
+  <!-- ============ 开始页（模式介绍 / 开局） ============ -->
+  <div id="view-start" class="card hidden">
     <div class="hero">
-      <h1>老夫人权谋</h1>
-      <p class="sub">你是侯府掌权老夫人,年近花甲,夫君早亡,独掌一族兴衰。<br/>儿孙各据文武商三线,皇权猜忌、宿敌反扑、玉玺秘藏。<br/>每一步抉择,都在保全满门与问鼎权柄之间。</p>
-      <div class="lines">
-        <span>嫡长子 · 六部文官</span><span>次子 · 京营兵权</span>
-        <span>长孙 · 朝堂</span><span>次孙 · 军方</span><span>重孙 · 钱粮情报</span>
-      </div>
+      <div class="seal-big" id="heroSeal">權</div>
+      <h1 id="heroTitle">老夫人权谋</h1>
+      <p class="sub" id="heroSub"></p>
+      <div class="lines" id="heroLines"></div>
     </div>
     <div id="noKeyNotice" class="notice hidden">还没绑定 AI,先去设置里填一个自己的 key 才能开局 →</div>
     <div class="start-actions">
       <button class="btn btn-main" id="continueBtn" style="display:none">继续上一局</button>
-      <button class="btn btn-main" id="newGameBtn">开局 · 执掌世家</button>
+      <button class="btn btn-main" id="newGameBtn">开局</button>
       <button class="btn btn-ghost" id="toSettingsBtn" style="flex:1">设置 AI 与开局难度</button>
+      <button class="btn btn-ghost" id="backHomeBtn" style="flex:1">← 换一种人生</button>
     </div>
     <p class="foot">纯本地运行 · 剧情与 key 都只待在这台设备,不上传任何服务器</p>
   </div>
@@ -313,7 +338,7 @@
     <div class="field">
       <label for="provider">用哪家模型</label>
       <select id="provider">
-        <option value="deepseek">DeepSeek（便宜、中文权谋叙事强,推荐）</option>
+        <option value="deepseek">DeepSeek（便宜、中文叙事强,推荐）</option>
         <option value="moonshot">Kimi / Moonshot（长上下文,剧情连贯）</option>
         <option value="zhipu">智谱 GLM（有免费额度）</option>
         <option value="qwen">通义千问 Qwen（阿里百炼）</option>
@@ -342,9 +367,9 @@
     <div class="field">
       <label for="difficulty">开局难度 / 烈度</label>
       <select id="difficulty">
-        <option value="平稳">平稳——危机温和,容错高,适合看故事</option>
-        <option value="标准" selected>标准——经典权谋烈度,推荐</option>
-        <option value="凶险">凶险——皇帝多疑、宿敌狠辣,步步杀机</option>
+        <option value="平稳">平稳——风波温和,容错高,适合看故事</option>
+        <option value="标准" selected>标准——经典烈度,推荐</option>
+        <option value="凶险">凶险——变故频仍,步步惊心</option>
       </select>
     </div>
 
@@ -361,7 +386,7 @@
     <div class="panel" id="panel">
       <div class="stats" id="statsGrid"><!-- JS 注入 --></div>
       <div class="power-row">
-        <span class="k">家族权势</span>
+        <span class="k" id="powerLabel">家族权势</span>
         <span class="power-tag" id="powerTag">根基稳固</span>
         <span class="desc" id="powerDesc"></span>
       </div>
@@ -377,7 +402,8 @@
   <!-- ============ 结局页 ============ -->
   <div id="view-ending" class="card hidden">
     <div id="endingArea"></div>
-    <div class="actbar" style="padding:8px 24px 28px">
+    <div class="actbar" style="padding:8px 24px 28px;gap:10px">
+      <button class="btn btn-ghost" id="endingHomeBtn" style="flex:1">⌂ 首页</button>
       <button class="btn btn-main" id="endingRestartBtn">再开一局</button>
     </div>
   </div>
@@ -389,7 +415,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 
-/* ===================== Provider 配置（沿用脱水项目那套，纯 OpenAI 兼容 / Gemini） ===================== */
+/* ===================== Provider 配置（纯 OpenAI 兼容 / Gemini） ===================== */
 const PROVIDERS = {
   deepseek:  { kind:"openai", base:"https://api.deepseek.com/chat/completions", model:"deepseek-chat",
                keyHint:'去 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com</a> 建 key。中文叙事强、便宜,首选。' },
@@ -443,196 +469,62 @@ $("provider").addEventListener("change", ()=>{
   $("baseField").style.display = (p==="custom") ? "block" : "none";
 });
 
-/* ===================== 视图切换 ===================== */
-function show(view){
-  ["start","settings","game","ending"].forEach(v=> $("view-"+v).classList.toggle("hidden", v!==view));
-  $("restartTop").style.display = (view==="game") ? "block" : "none";  // 重开按钮只在对局中露出
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-function toast(msg){
-  const t = $("toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
-}
-// 从剧情文本里兜底提取家族姓氏(模型常忘了回 surname 字段)
-const SURNAME_BAD = new Set(["侯","公","王","相","皇","宫","本","贵","世","国","官","太","老","府","开","回","相府"]);
-function extractSurname(text){
-  if(!text) return "";
-  const re = /([一-龥]{1,2})府/g; let m;
-  while((m = re.exec(text))){
-    const s = m[1];
-    if(!SURNAME_BAD.has(s) && !SURNAME_BAD.has(s[s.length-1])) return s.slice(0,2);
-  }
-  const m2 = text.match(/姓([一-龥])/) || text.match(/([一-龥]{1,2})(?:老夫人|老封君|老太君)/);
-  return m2 ? m2[1] : "";
-}
-// 顶部印章:开局后显示当前家族姓氏首字,否则显示通用「權」
-function updateSeal(){
-  if(game && !game.surname){
-    const s = extractSurname(game.lastScene);
-    if(s) game.surname = s;
-  }
-  $("topSeal").textContent = (game && game.surname) ? game.surname[0] : "權";
-}
+/* ===================== 模式配置 ===================== */
+const MAX_TURNS = 16;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
 
-/* ===================== 属性面板定义 ===================== */
-const STAT_DEFS = [
-  { key:"good",   name:"善恶",  cls:"b-good"  },
-  { key:"fame",   name:"名声",  cls:"b-fame"  },
-  { key:"health", name:"康健",  cls:"b-health"},
-  { key:"intel",  name:"情报",  cls:"b-intel" },
-];
-
-/* ===================== 游戏状态 ===================== */
-let game = null; // {stats, wealth, powerTag, powerDesc, stage, turn, history[], achievements[], lastChoices[], ended}
-
-function freshGame(){
-  return {
-    surname:"",                       // 家族姓氏:开局由 AI 随机生成
-    stats:{ good:60, fame:60, health:75, intel:55 },
-    wealth:120,                       // 私财:白银(万两)
-    powerTag:"根基稳固", powerDesc:"侯府旧勋,儿孙各据其位",
-    stage:"守局 · 前期", turn:0,
-    history:[],                       // [{role, content}] 给模型的精简记忆
-    achievements:[],
-    lastChoices:[], lastScene:"",
-    ended:false, ending:null,
-    prevStats:null,
-  };
-}
-function saveGame(){ if(game) localStorage.setItem("lfr_save", JSON.stringify(game)); }
-function loadGame(){ try{ return JSON.parse(localStorage.getItem("lfr_save")); }catch{ return null; } }
-
-/* ===================== 面板渲染 ===================== */
-function clampStat(v){ return Math.max(0, Math.min(100, Math.round(v))); }
-function renderPanel(){
-  updateSeal();   // 每回合刷新顶部印章为当前家族姓氏(阶段/回合信息已并入剧情区 meta,不再单列)
-  const grid = $("statsGrid");
-  // 4 项进度条 + 私财数字 + 情报已在4项内,私财单列
-  let html = "";
-  STAT_DEFS.forEach(d=>{
-    const v = clampStat(game.stats[d.key]);
-    const prev = game.prevStats ? clampStat(game.prevStats[d.key]) : v;
-    const diff = v - prev;
-    const chip = diff!==0 ? `<span class="chip ${diff>0?'up':'down'}">${diff>0?'+':''}${diff}</span>` : "";
-    html += `
-      <div class="stat">
-        <div class="lab"><b>${d.name}</b><span class="num">${v} ${chip}</span></div>
-        <div class="bar ${d.cls}"><i style="width:${v}%"></i></div>
-      </div>`;
-  });
-  // 私财
-  const pw = game.wealth, pprev = game.prevStats ? game.prevStats._wealth : pw;
-  const wdiff = (pprev!=null)? (pw - pprev): 0;
-  const wchip = wdiff!==0 ? `<span class="chip ${wdiff>0?'up':'down'}">${wdiff>0?'+':''}${wdiff}</span>` : "";
-  html += `
-    <div class="stat">
-      <div class="lab"><b>私财</b><span class="num"><span class="silver">${pw}</span><span style="font-size:11px;color:var(--ink-soft)"> 万两</span> ${wchip}</span></div>
-      <div class="bar b-fame"><i style="width:${Math.min(100, pw/3)}%"></i></div>
-    </div>`;
-  grid.innerHTML = html;
-  $("powerTag").textContent = game.powerTag || "—";
-  $("powerDesc").textContent = game.powerDesc || "";
-}
-
-/* ===================== 剧情 + 选项渲染 ===================== */
-let selected = new Set();
-function renderScene(data){
-  const sa = $("sceneArea");
-  let changesHtml = "";
-  if(data.changes && data.changes.length){
-    changesHtml = `<div class="changes">` + data.changes.map(c=>{
-      const up = (c.delta||0) >= 0;
-      return `<span class="c ${up?'up':'down'}">${c.name} ${up?'+':''}${c.delta}｜${c.reason||''}</span>`;
-    }).join("") + `</div>`;
-  }
-  sa.innerHTML = `
-    <div class="scene">
-      <div class="meta">${game.stage}　·　第 ${game.turn} 回合</div>
-      <div class="body">${escapeHtml(data.scene||"").replace(/\n/g,"<br/>")}</div>
-    </div>
-    ${changesHtml}`;
-}
-// 模型实在不给选项时的前端通用兜底:措辞泛化,任何局势都说得通,保证玩家总能继续
-const FALLBACK_CHOICES = [
-  {route:"保守", title:"按兵不动,静观其变", detail:"暂不轻举妄动,守稳眼前局面"},
-  {route:"强攻", title:"主动出击,先发制人", detail:"趁势而上,打对手一个措手不及"},
-  {route:"隐忍", title:"忍让周旋,暗中布置", detail:"表面退让,私下悄然落子"},
-  {route:"布局", title:"广布耳目,徐图长远", detail:"安插眼线、铺垫后手,谋划大局"},
-];
-function renderChoices(choices){
-  selected = new Set();
-  const ca = $("choiceArea");
-  // 过滤空白项;若模型没给任何选项,用前端通用选项兜底,保证每回合都能继续
-  let list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
-  const usedFallback = list.length === 0;
-  if(usedFallback) list = FALLBACK_CHOICES.slice();
-  game.lastChoices = list;
-  const opts = list.map((c,i)=>`
-    <button class="opt" data-i="${i}">
-      <span class="box">✓</span>
-      <span class="txt">
-        <span class="rt rt-${c.route||'布局'}">${c.route||'布局'}</span><span class="ti">${escapeHtml(c.title||'')}</span>
-        <div class="de">${escapeHtml(c.detail||'')}</div>
-      </span>
-    </button>`).join("");
-  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对继续。</div>` : "";
-  ca.innerHTML = `
-    <div class="choices">
-      <div class="hint">⚜ 可多选合并推进多条线——但选得越多,康健与私财耗损越重,量力而行</div>
-      ${fbHint}
-      ${opts}
-      <div class="actbar">
-        <button class="btn btn-main" id="commitBtn">落子 · 见分晓</button>
-      </div>
-    </div>`;
-  ca.querySelectorAll(".opt").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const i = +btn.dataset.i;
-      if(selected.has(i)){ selected.delete(i); btn.classList.remove("sel"); }
-      else { selected.add(i); btn.classList.add("sel"); }
-    });
-  });
-  $("commitBtn").addEventListener("click", commitTurn);
-}
-// 模型偶尔不给选项时,催它只补出本回合的 4 个抉择,不推进新剧情
-async function regenChoices(){
-  showLoading("正在重新铺开抉择……");
-  try{
-    const data = await askModel("（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合恰好 4 个抉择选项写进 choices(覆盖保守/强攻/隐忍/布局),scene 字段留空,不要推进新剧情、不要改数值、不要结束游戏。）");
-    const clean = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
-    if(clean.length === 0){
-      renderChoices([]);   // 重出仍失败:用前端通用选项兜底,保证能继续推进
-      saveGame();
-      return;
-    }
-    renderChoices(data.choices);   // 只补选项,不动面板与回合数
-    saveGame();
-  }catch(e){
-    showError("没取到选项:"+e.message);
-    const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
-  }
-}
-function escapeHtml(s){ return (s||"").replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
-
-function showLoading(text){
-  $("choiceArea").innerHTML = `
-    <div class="loading">
-      <div class="spinner"></div>
-      <div class="tip">${text||"老夫人正在斟酌……"}</div>
-    </div>`;
-}
-function showError(msg){
-  const ca = $("choiceArea");
-  const box = document.createElement("div");
-  box.className = "errbox";
-  box.innerHTML = msg + '<br/><button class="btn btn-ghost" id="retryBtn" style="margin-top:10px;width:100%">重试这一步</button>';
-  ca.innerHTML = "";
-  ca.appendChild(box);
-}
-
-/* ===================== 与模型交互 ===================== */
-function systemPrompt(){
-  return `你是一款古风权谋文字模拟游戏的叙事引擎兼游戏主持(GM)。严格按以下设定运行,只输出 JSON,不要任何额外文字。
+const MODES = {
+  /* ---------- 侯府权谋 ---------- */
+  quanmou:{
+    id:"quanmou", seal:"權", sealCls:"q",
+    homeName:"侯府权谋",
+    homeDesc:"执掌侯府的老封君,在皇权猜忌与宿敌环伺间,保全满门、问鼎权柄。",
+    homeTags:["宅斗","朝堂","边关","皇权"],
+    brandTitle:"老夫人权谋", brandSub:"宅斗 · 朝堂 · 边关 · 皇权",
+    heroTitle:"老夫人权谋",
+    heroSub:"你是侯府掌权老夫人,年近花甲,夫君早亡,独掌一族兴衰。<br/>儿孙各据文武商三线,皇权猜忌、宿敌反扑、玉玺秘藏。<br/>每一步抉择,都在保全满门与问鼎权柄之间。",
+    heroLines:["嫡长子 · 六部文官","次子 · 京营兵权","长孙 · 朝堂","次孙 · 军方","重孙 · 钱粮情报"],
+    startBtn:"开局 · 执掌世家",
+    loadingOpen:"正在为本局世家立姓、铺陈开局棋势……",
+    loadingTurn:"落子已定,正在推演朝局……",
+    commitBtn:"落子 · 见分晓",
+    hint:"⚜ 可多选合并推进多条线——但选得越多,康健与私财耗损越重,量力而行",
+    penalty:"康健与私财",
+    powerLabel:"家族权势",
+    stats:[
+      {key:"good",   name:"善恶",  cls:"b-good"  },
+      {key:"fame",   name:"名声",  cls:"b-fame"  },
+      {key:"health", name:"康健",  cls:"b-health"},
+      {key:"intel",  name:"情报",  cls:"b-intel" },
+    ],
+    money:{ name:"私财", unit:"万两", bar:"b-fame", div:3 },
+    routes:["保守","强攻","隐忍","布局"],
+    stages:[[4,"守局 · 前期"],[9,"布局 · 中期"],[13,"入局 · 后期"],[99,"定局 · 结局"]],
+    init:{ stats:{ good:60, fame:60, health:75, intel:55 }, wealth:120, powerTag:"根基稳固", powerDesc:"侯府旧勋,儿孙各据其位" },
+    fallback:[
+      {route:"保守", title:"按兵不动,静观其变", detail:"暂不轻举妄动,守稳眼前局面"},
+      {route:"强攻", title:"主动出击,先发制人", detail:"趁势而上,打对手一个措手不及"},
+      {route:"隐忍", title:"忍让周旋,暗中布置", detail:"表面退让,私下悄然落子"},
+      {route:"布局", title:"广布耳目,徐图长远", detail:"安插眼线、铺垫后手,谋划大局"},
+    ],
+    snap:(g)=>{ const s=g.stats; return `【当前面板】善恶${s.good} 名声${s.fame} 康健${s.health} 情报${s.intel} 私财${g.wealth}万两 ｜权势:${g.powerTag} ｜阶段:${g.stage} ｜已是第${g.turn}回合。`; },
+    openMsg:(diff)=>`开始新的一局(难度:${diff})。请先随机为本局家族起一个古风世家姓氏(放进 surname 字段),再按固定开局模板生成开局:交代该世家全貌、儿孙分工与名字、同时压来的开局三危机、以及那件皇家秘物的线索,并给出第一回合的 4 个抉择选项。这是第 1 回合。`,
+    turnTail:"请据此续写剧情并更新面板与阶段,给出下一回合的 4 个抉择(若已到结局则结束)。",
+    finalStats:(g)=>{ const s=g.stats; return [
+      ["历经回合", g.turn], ["家族权势", g.powerTag],
+      ["善恶 风评", s.good], ["朝野名声", s.fame],
+      ["临终康健", s.health], ["遗下私财", g.wealth+" 万两"],
+    ]; },
+    deathEnding:(g)=>({ type:"寿终正寝", title:"灯枯油尽,撒手人寰",
+      summary:`第 ${g.turn} 回合,${g.surname||"侯府"}府老夫人终因操劳过度、心力交瘁,于深夜阖目而逝。她未及看到棋局的最后落子,但满门荣辱已系于儿孙之手。`,
+      epitaph:"机关算尽,终抵不过岁月催人。", achievements:g.achievements.slice() }),
+    capEnding:(g)=>{ const s=g.stats; let type,title,epitaph,good;
+      if(g.wealth<=0){ good=false; type="破产败落"; title="金尽人散,家道中落"; epitaph="昔年钟鸣鼎食,终散作过眼云烟。"; }
+      else if(s.fame<25 && s.good<25){ good=false; type="众叛亲离"; title="墙倒众推,门庭凋零"; epitaph="机关算尽太聪明,反误了卿卿性命。"; }
+      else if((g.powerTag||"").includes("控皇")||(g.powerTag||"").includes("幕后")){ good=true; type="幕后无冕"; title="垂帘不坐,权倾朝野"; epitaph="无冕而王,功过任由后人评说。"; }
+      else { good=true; type="安稳权臣"; title="三朝柱石,富贵绵长"; epitaph="忠勤一世,簪缨世代不绝。"; }
+      return { type,title,epitaph, summary:`历经 ${g.turn} 回合权谋周旋,${g.surname||""}府终于走到棋局尽头。`+(good?`老夫人以一己之力撑起满门,儿孙各承其志、文武有继,家族就此定格于此番荣光。`:`老夫人虽机关算尽,终究没能护住满门荣华,昔日权势如沙堡崩塌。`), achievements:g.achievements.slice() };
+    },
+    sys:(diff)=>`你是一款古风权谋文字模拟游戏的叙事引擎兼游戏主持(GM)。严格按以下设定运行,只输出 JSON,不要任何额外文字。
 
 【核心定位】
 - 主角固定:中老年掌权老夫人,某世家(侯府/国公府级)掌权主母,58-68岁,夫君早亡,独掌全族大权,是家族唯一决策者。
@@ -662,72 +554,327 @@ function systemPrompt(){
 
 【规则】
 1. 每回合必须给出恰好 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一);choices 数组在任何非结局回合都绝不可为空、不可少于 4 项。玩家会勾选其中一项或多项合并执行。
-2. 【多选惩罚·必须严格执行】玩家同时勾选的行动越多,代表老夫人分身多线、殚精竭虑、四处洒银,康健与私财的消耗必须随勾选数量显著叠加:选 1 项按正常消耗;选 2 项时康健与私财的扣减约为 1.5 倍;选 3 项约 2 倍;选 4 项约 2.5-3 倍。多线带来的正向增益虽然也叠加,但边际递减——绝不能让"每回合全选 4 项"变成无脑稳赚的最优解,多选必须明显更伤身体、更烧钱,逼玩家权衡取舍。系统会在玩家行动文本里注明本回合选了几项,据此核算。
-3. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,严格控制在 100-160 字,开局回合也不超过 220 字),只交代关键过程与利弊后果,语言凝练、点到为止,不要铺陈赘述;然后据此更新全部数值(stats 给更新后的绝对值)。选项的 detail 每条不超过 25 字。
+2. 【多选惩罚·必须严格执行】玩家同时勾选的行动越多,康健与私财的消耗必须随勾选数量显著叠加:选 1 项正常;2 项约 1.5 倍;3 项约 2 倍;4 项约 2.5-3 倍。正向增益也叠加但边际递减,绝不能让"全选 4 项"成为无脑稳赚。系统会注明本回合选了几项。
+3. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,100-160 字,开局回合不超 220 字),只交代关键过程与利弊后果,凝练点到为止;然后更新全部数值(stats 给绝对值)。选项 detail 每条不超 25 字。
 4. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
-5. 明面忠君、暗中囤兵布局收买谋皇权,全部合规,符合隐忍权谋人设。
-6. 难度=${cfg.difficulty}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
-7. 适时在 newAchievements 里追加 1 个达成的成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有就给空数组。
-8. 数值变化写进 changes 数组(每项 name/delta/reason),delta 是相对上一回合的增减。
-9. 阶段必须随回合推进,严禁长期滞留「前期」。以约 16 回合一局为基准的回合→阶段对照:第 1-4 回合=守局·前期;第 5-9 回合=布局·中期;第 10-13 回合=入局·后期;第 14 回合起=定局·结局。系统每回合会在玩家消息里附上当前回合数与建议阶段,stage 字段必须据此推进、不得倒退或停滞在前期。全局约 14-18 回合内必须收束;一旦逼近终局或触发败亡条件,果断设 ended=true,绝不可无限拖延。
-10. 结局分「善终」与「败亡」两类,务必依据实际局势如实给出,不要一味圆满。
-    善终:① 安稳权臣(始终忠君、世代柱石、富贵绵长);② 幕后无冕(扶傀儡幼帝、老夫人幕后掌权)。
-    败亡(bad ending,条件触发时必须给,不要强行圆满):③ 满门抄斩(谋逆败露、玉玺事泄被定大逆,或触怒皇帝遭族诛);④ 抄家流放(贪墨结党证据落入皇帝/政敌之手,家产充公、子孙流徙);⑤ 破产败落(私财耗尽 wealth≤0 且无力回天,变卖田产、家道中落、门庭凋零);⑥ 寿终正寝(health 归零,殚精竭虑而逝,棋局未竟);⑦ 众叛亲离(fame 与 good 双双过低,儿孙离心、墙倒众推)。
-    触发判断:当 wealth≤0,或 fame 与 good 双双跌至 25 以下,或谋夺皇权之事败露被抓实时,应果断导向对应的败亡结局,而非强行善终。
+5. 明面忠君、暗中囤兵布局收买谋皇权,符合隐忍权谋人设。
+6. 难度=${diff}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
+7. 适时在 newAchievements 追加 1 个成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有给空数组。
+8. 数值变化写进 changes(每项 name/delta/reason),delta 相对上一回合增减。
+9. 阶段随回合推进,勿滞留前期:1-4 守局/5-9 布局/10-13 入局/14 起定局。系统每回合附建议阶段,stage 必须据此推进。约 14-18 回合收束,逼近终局或触发败亡条件即 ended=true。
+10. 结局分善终与败亡,据实给出:善终——安稳权臣 / 幕后无冕;败亡——满门抄斩 / 抄家流放 / 破产败落 / 寿终正寝 / 众叛亲离。当 wealth≤0,或 fame 与 good 双双跌至 25 以下,或谋皇权事败时,果断走向对应败亡结局。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
-{
-  "surname": "沈",
-  "stage": "守局 · 前期",
-  "scene": "本回合剧情正文……",
-  "stats": { "good":60, "fame":60, "health":74, "intel":56 },
-  "wealth": 120,
-  "powerTag": "朝堂权臣",
-  "powerDesc": "一句话描述当前家族权势态势",
-  "changes": [ {"name":"康健","delta":-2,"reason":"夜谋耗神"} ],
-  "newAchievements": [],
-  "choices": [
-    {"route":"保守","title":"……","detail":"……"},
-    {"route":"强攻","title":"……","detail":"……"},
-    {"route":"隐忍","title":"……","detail":"……"},
-    {"route":"布局","title":"……","detail":"……"}
-  ],
-  "ended": false,
-  "ending": null
-}
-当 ended=true 时,choices 给空数组,并填:
-"ending": {
-  "type": "幕后无冕",            // 善终:安稳权臣 / 幕后无冕；败亡:满门抄斩 / 抄家流放 / 破产败落 / 寿终正寝 / 众叛亲离
-  "title": "结局标题",
-  "summary": "150-250字凝练总结这一生的权谋历程、家族最终高度与儿孙结局,不要流水账",
-  "epitaph": "一句史书风评价",
-  "achievements": ["梳理整局达成的关键成就，5-9条"]
-}`;
+{ "surname":"沈","stage":"守局 · 前期","scene":"...","stats":{"good":60,"fame":60,"health":74,"intel":56},"wealth":120,"powerTag":"朝堂权臣","powerDesc":"一句话描述权势","changes":[{"name":"康健","delta":-2,"reason":"夜谋耗神"}],"newAchievements":[],"choices":[{"route":"保守","title":"...","detail":"..."},{"route":"强攻","title":"...","detail":"..."},{"route":"隐忍","title":"...","detail":"..."},{"route":"布局","title":"...","detail":"..."}],"ended":false,"ending":null }
+当 ended=true 时,choices 给空数组,并填 ending:{ "type":"幕后无冕","title":"结局标题","summary":"150-250字凝练总结这一生权谋历程、家族最终高度与儿孙结局","epitaph":"一句史书风评价","achievements":["5-9条关键成就"] }`,
+  },
+
+  /* ---------- 寻常家计 ---------- */
+  richang:{
+    id:"richang", seal:"家", sealCls:"r",
+    homeName:"寻常家计",
+    homeDesc:"一位寻常人家的老太太,相夫教子、操持家计,把儿女拉扯成器,求个儿孙满堂、福寿安康。",
+    homeTags:["相夫教子","持家","婚嫁","邻里"],
+    brandTitle:"寻常老夫人", brandSub:"相夫教子 · 操持家计 · 含饴弄孙",
+    heroTitle:"寻常人家",
+    heroSub:"你是一位寻常人家的老太太,与老伴相守半生,儿女渐渐长大。<br/>课业婚嫁、柴米油盐、邻里人情,都要你这主心骨张罗。<br/>这一生没有刀光剑影,只盼把儿女教养成器、家宅和顺、晚景安乐。",
+    heroLines:["长子 · 求功名或学手艺","女儿 · 待字闺中","幼子 · 顽劣待教","老伴 · 相守扶持","街坊 · 人情往来"],
+    startBtn:"开局 · 操持家业",
+    loadingOpen:"正在为这户人家立姓、铺陈家常光景……",
+    loadingTurn:"主意已定,正在续写家中光景……",
+    commitBtn:"拿定主意",
+    hint:"⚜ 可多选合并操持几桩事——但管得越多,康健与家用耗费越重,量力而行",
+    penalty:"康健与家用",
+    powerLabel:"家境门风",
+    stats:[
+      {key:"harmony",    name:"家睦",  cls:"b-good"  },
+      {key:"reputation", name:"邻里",  cls:"b-fame"  },
+      {key:"health",     name:"康健",  cls:"b-health"},
+      {key:"children",   name:"儿女",  cls:"b-intel" },
+    ],
+    money:{ name:"家用", unit:"两", bar:"b-fame", div:2 },
+    routes:["持家","严教","慈和","张罗"],
+    stages:[[4,"操持 · 前期"],[9,"婚嫁 · 中期"],[13,"含饴 · 后期"],[99,"暮年 · 收束"]],
+    init:{ stats:{ harmony:65, reputation:60, health:78, children:55 }, wealth:40, powerTag:"寻常人家", powerDesc:"小门小户,儿女绕膝,日子紧巴却也安稳" },
+    fallback:[
+      {route:"持家", title:"精打细算,操持家务", detail:"把柴米油盐安排妥帖"},
+      {route:"严教", title:"督促课业,严加管教", detail:"盯紧儿女读书习字、立规矩"},
+      {route:"慈和", title:"温言抚慰,以情教化", detail:"耐心开导,以慈母心暖家人"},
+      {route:"张罗", title:"走动人情,张罗里外", detail:"串门走亲、托人说合、打点往来"},
+    ],
+    snap:(g)=>{ const s=g.stats; return `【当前家况】家睦${s.harmony} 邻里${s.reputation} 康健${s.health} 儿女${s.children} 家用${g.wealth}两 ｜门风:${g.powerTag} ｜阶段:${g.stage} ｜已是第${g.turn}回合。`; },
+    openMsg:(diff)=>`开始新的一局(难度:${diff})。请先随机为这户人家起一个寻常温厚的姓氏(放进 surname 字段),再按固定开局模板生成开局:交代这户人家的境况、老伴与儿女的性情和名字、开局压来的三桩家常牵挂,并给出第一回合的 4 个抉择选项。这是第 1 回合。`,
+    turnTail:"请据此续写家中光景并更新面板与阶段,给出下一回合的 4 个抉择(若已到结局则结束)。",
+    finalStats:(g)=>{ const s=g.stats; return [
+      ["历经回合", g.turn], ["家境门风", g.powerTag],
+      ["儿女成器", s.children], ["家宅和睦", s.harmony],
+      ["临终康健", s.health], ["遗下家用", g.wealth+" 两"],
+    ]; },
+    deathEnding:(g)=>({ type:"积劳成疾", title:"操劳一世,溘然长逝",
+      summary:`第 ${g.turn} 回合,${g.surname||""}家老太太一辈子为这个家操碎了心,终是积劳成疾,在儿孙环侍中安详合眼。她没看到所有牵挂尘埃落定,但这个家的冷暖,早已浸进她操持过的每一餐每一衣。`,
+      epitaph:"一生操劳为儿女,慈母之恩重如山。", achievements:g.achievements.slice() }),
+    capEnding:(g)=>{ const s=g.stats; let type,title,epitaph,good;
+      if(g.wealth<=0){ good=false; type="家道中落"; title="坐吃山空,变卖度日"; epitaph="勤俭未能传家,家底终归散尽。"; }
+      else if((s.children||0)<25){ good=false; type="子孙不肖"; title="儿女失教,晚景寒心"; epitaph="养儿一场,到头却是空牵挂。"; }
+      else if(s.harmony<25 && s.reputation<25){ good=false; type="孤苦暮年"; title="冷锅冷灶,门庭寥落"; epitaph="一世张罗,晚来却少人嘘寒。"; }
+      else if((s.children||0)>=70 && g.wealth>=80){ good=true; type="教子有方"; title="儿女成器,家业兴旺"; epitaph="教子有方,门楣由她一手撑起。"; }
+      else if(s.reputation>=70){ good=true; type="贤名乡里"; title="德高望重,乡邻敬重"; epitaph="积善之家,贤名传遍乡里。"; }
+      else { good=true; type="儿孙满堂"; title="含饴弄孙,福寿双全"; epitaph="儿孙绕膝,福寿安康,一生圆满。"; }
+      return { type,title,epitaph, summary:`历经 ${g.turn} 回合的操持张罗,${g.surname||""}家老太太走到了暮年。`+(good?`儿女各自成家立业,家宅和顺、儿孙绕膝,她终于能在屋檐下安享这迟来的清福。`:`忙碌一生,到头来家境与亲情却没能两全,晚景多了几分凄凉。`), achievements:g.achievements.slice() };
+    },
+    sys:(diff)=>`你是一款古风家庭生活文字模拟游戏的叙事引擎兼主持(GM)。严格按设定运行,只输出 JSON,不要任何额外文字。
+
+【核心定位】
+- 主角固定:一位寻常人家的老夫人(老太太),52-64岁,出身耕读/小康之家,与老伴相守(或早年丧偶),儿女渐渐成人。她操持家计、教养子女、张罗婚嫁、调和邻里,是这个家的主心骨。
+- 家族姓氏:每开新局随机起一个寻常温厚的姓氏(如林、苏、周、何、许、孟、柳、陈等),整局一致,用 surname 字段返回(只填一个姓)。
+- 玩法:相夫教子 + 持家理财 + 婚嫁成家 + 邻里人情,烟火温情、生活化,无朝堂权谋、无刀光杀伐。
+- 时代:架空古代市井乡里,有田产、铺面、私塾、媒妁、街坊、宗族、节庆、灾年荒月、婚丧嫁娶、生老病死。
+- 核心目标:把儿女教养成器、各自婚配立业,守住家睦与门风,攒下家底安度晚年,在乡里落个贤名,儿孙绕膝、福寿双全。
+
+【固定开局模板】(仅第一回合用)
+- 老夫人持家多年,儿女各有性情:可设长子(读书求功名或学手艺)、女儿(待字闺中或议亲中)、幼子(顽劣或聪慧)等,给名字与鲜明性情并保持一致;老伴可在世(性情各异)或已故。
+- 开局抛出三桩家常牵挂同时存在:① 子女的前程/学业/品行隐忧;② 一桩家计难题(收成歉薄、铺面亏盈、借贷、修屋、看病花销);③ 一段人情往来(邻里纠纷、亲戚求助、议亲苗头)。
+
+【四阶段脉络】
+操持(前期):儿女年少,管教课业、操持家用、立家规、应付家计难关。
+婚嫁(中期):儿女议亲说媒、成家立业、分炊置产、应对婆媳妯娌。
+含饴(后期):儿孙出世、抱孙弄孙、调和小辈、张罗大小家事。
+暮年(收束):寿数渐高,看儿孙是否成器、家宅是否和顺、晚景是否安乐。
+
+【属性面板】(0-100,家用除外)
+- harmony 家睦:家人和睦、夫妻子女融洽、长幼有序则涨;争吵、偏心、冷落、离心则降。
+- reputation 邻里:乐善好施、知书达理、热心助人涨乡里口碑;刻薄、失信、结怨则降。
+- health 康健:老夫人年事已高,只会逐年下降、绝不回升。操劳家务/忧心子女扣得多;含饴弄孙/安享清福也只能延缓损耗、扣得少,绝不增加。系统每回合都会自然衰减一点(前端强制),不要写出让康健上涨的剧情或数值,休养类选项应表述为「歇口气以减缓损耗」而非「恢复康健」。归零=油尽灯枯、安详离世立即落幕。
+- children 儿女:子女成器、学业有成、品行端正、各自立业则涨;顽劣、败家、不孝则降。这是老夫人一生最重的牵挂。
+- wealth 家用(白银·两):靠田产铺面、勤俭积攒而来;婚嫁聘嫁、修屋、看病、灾年、人情往来都要花。普通人家,数目以几十到几百两计。
+- 家境门风(powerTag):隐藏综合档位,三档递进——寻常人家 / 和睦之家 / 兴旺门第。
+
+【规则】
+1. 每回合必须给出恰好 4 个选项,分别覆盖「持家 / 严教 / 慈和 / 张罗」四条路线(route 字段必须是这四个词之一);非结局回合 choices 绝不可为空、不可少于 4 项。玩家会勾选其中一项或多项合并执行。
+2. 【多选惩罚·必须严格执行】同时操持的事越多,老夫人越劳神费钱,康健与家用的消耗随勾选数量叠加:选 1 项正常;2 项约 1.5 倍;3 项约 2 倍;4 项约 2.5-3 倍。增益也叠加但边际递减,绝不能让"全选 4 项"成为无脑稳赚。系统会注明本回合选了几项。
+3. 收到玩家行动后:写一段精炼、连贯、有生活气与温度的剧情(scene,100-160 字,开局回合不超 220 字),交代关键经过与得失,凝练有人情味;然后更新全部数值(stats 给绝对值)。选项 detail 每条不超 25 字。
+4. 剧情强制连贯:承接子女性情与前程、婚嫁进展、家计起落、老伴境况、邻里恩怨等所有伏笔,不重置、不遗忘。
+5. 全程生活化、温情向,可有矛盾波折(婆媳不睦、子女败家、灾病横祸、负心悔婚、亲戚算计)但绝不涉权谋杀伐、朝堂争斗。
+6. 难度=${diff}。凶险则家道多舛、变故频繁、数值波动大、人心更难测;平稳则相反。
+7. 适时在 newAchievements 追加 1 个成就(如「长子中秀才」「幼女风光出阁」「修起三间新屋」「乡邻交口称贤」「抱上头孙」),没有给空数组。
+8. 数值变化写进 changes(每项 name/delta/reason),delta 相对上一回合增减。
+9. 阶段随回合推进,勿滞留前期:1-4 操持/5-9 婚嫁/10-13 含饴/14 起暮年。系统每回合附建议阶段,stage 必须据此推进。约 14-18 回合收束,逼近终局或触发结局条件即 ended=true。
+10. 结局分圆满与遗憾,据实给出:圆满——儿孙满堂 / 教子有方 / 贤名乡里;遗憾——家道中落 / 子孙不肖 / 积劳成疾 / 孤苦暮年。当 wealth≤0,或 children 跌破 25,或 harmony 与 reputation 双双跌破 25 时,果断导向对应遗憾结局,而非强行圆满。
+
+【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
+{ "surname":"林","stage":"操持 · 前期","scene":"...","stats":{"harmony":65,"reputation":60,"health":77,"children":55},"wealth":40,"powerTag":"和睦之家","powerDesc":"一句话描述家境门风","changes":[{"name":"康健","delta":-2,"reason":"操持家务"}],"newAchievements":[],"choices":[{"route":"持家","title":"...","detail":"..."},{"route":"严教","title":"...","detail":"..."},{"route":"慈和","title":"...","detail":"..."},{"route":"张罗","title":"...","detail":"..."}],"ended":false,"ending":null }
+当 ended=true 时,choices 给空数组,并填 ending:{ "type":"儿孙满堂","title":"结局标题","summary":"150-250字凝练总结相夫教子的一生、儿女各自的归宿、晚景光景","epitaph":"一句乡里口碑式的评语","achievements":["5-9条这一生的关键成就"] }`,
+  },
+};
+
+let currentModeId = localStorage.getItem("lfr_mode") || "";
+function M(){ return MODES[(game && game.mode) || currentModeId] || MODES.quanmou; }
+function suggestStage(turn){
+  const st = M().stages;
+  for(const [max,name] of st){ if(turn <= max) return name; }
+  return st[st.length-1][1];
 }
 
-const MAX_TURNS = 16;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
-function suggestStage(turn){
-  if(turn <= 4)  return "守局 · 前期";
-  if(turn <= 9)  return "布局 · 中期";
-  if(turn <= 13) return "入局 · 后期";
-  return "定局 · 结局";
+/* ===================== 视图切换 ===================== */
+function show(view){
+  ["home","start","settings","game","ending"].forEach(v=> $("view-"+v).classList.toggle("hidden", v!==view));
+  $("restartTop").style.display = (view==="game") ? "block" : "none";
+  $("homeTop").style.display = (view==="game") ? "block" : "none";
+  if(view==="home") applyTopbar(null);
+  window.scrollTo({top:0,behavior:"smooth"});
 }
-function buildUserMessage(actionText){
-  // 把当前数值快照 + 玩家行动一起发给模型,确保连贯
-  const s = game.stats;
-  const snap = `【当前面板】善恶${s.good} 名声${s.fame} 康健${s.health} 情报${s.intel} 私财${game.wealth}万两 ｜权势:${game.powerTag} ｜阶段:${game.stage} ｜已是第${game.turn}回合。`;
-  if(game.turn === 0){
-    return `开始新的一局(难度:${cfg.difficulty})。请先随机为本局家族起一个古风世家姓氏(放进 surname 字段),再按固定开局模板生成开局:交代该世家全貌、儿孙分工与名字、同时压来的开局三危机、以及那件皇家秘物的线索,并给出第一回合的 4 个抉择选项。这是第 1 回合。`;
+function applyTopbar(modeId){
+  if(!modeId){
+    $("topSeal").textContent = "老";
+    $("brandTitle").childNodes[0].nodeValue = "老夫人模拟器";
+    $("brandSub").textContent = "选一种人生";
+    return;
   }
-  // 节奏控制:把"即将进入的回合 / 建议阶段 / 距收官还有几回合"硬塞给模型,避免它一直停在前期、无限拖
+  const m = MODES[modeId];
+  $("topSeal").textContent = (game && game.surname) ? game.surname[0] : m.seal;
+  $("brandTitle").childNodes[0].nodeValue = m.brandTitle;
+  $("brandSub").textContent = m.brandSub;
+}
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+// 从剧情文本里兜底提取家族姓氏(模型偶尔忘了回 surname 字段)
+const SURNAME_BAD = new Set(["侯","公","王","相","皇","宫","本","贵","世","国","官","太","老","府","开","回","相府","这","那","我","他","她"]);
+function extractSurname(text){
+  if(!text) return "";
+  const re = /([一-龥]{1,2})府/g; let m;
+  while((m = re.exec(text))){
+    const s = m[1];
+    if(!SURNAME_BAD.has(s) && !SURNAME_BAD.has(s[s.length-1])) return s.slice(0,2);
+  }
+  const m2 = text.match(/姓([一-龥])/) || text.match(/([一-龥]{1,2})(?:老夫人|老封君|老太君|老太太|家)/);
+  return m2 ? m2[1] : "";
+}
+function updateSeal(){
+  if(game && !game.surname){
+    const s = extractSurname(game.lastScene);
+    if(s) game.surname = s;
+  }
+  $("topSeal").textContent = (game && game.surname) ? game.surname[0] : M().seal;
+}
+
+/* ===================== 游戏状态 ===================== */
+let game = null;
+
+function freshGame(modeId){
+  const m = MODES[modeId];
+  return {
+    mode: modeId,
+    surname:"",
+    stats: Object.assign({}, m.init.stats),
+    wealth: m.init.wealth,
+    powerTag: m.init.powerTag, powerDesc: m.init.powerDesc,
+    stage: m.stages[0][1], turn:0,
+    history:[],
+    achievements:[],
+    lastChoices:[], lastScene:"",
+    ended:false, ending:null,
+    prevStats:null,
+  };
+}
+function saveKey(modeId){ return "lfr_save_" + (modeId || (game && game.mode) || currentModeId || "quanmou"); }
+function saveGame(){ if(game) localStorage.setItem(saveKey(), JSON.stringify(game)); }
+function loadGame(modeId){ try{ return JSON.parse(localStorage.getItem(saveKey(modeId))); }catch{ return null; } }
+
+/* ===================== 面板渲染 ===================== */
+function clampStat(v){ return Math.max(0, Math.min(100, Math.round(v))); }
+function renderPanel(){
+  updateSeal();
+  const m = M();
+  $("powerLabel").textContent = m.powerLabel;
+  const grid = $("statsGrid");
+  let html = "";
+  m.stats.forEach(d=>{
+    const v = clampStat(game.stats[d.key]);
+    const prev = game.prevStats ? clampStat(game.prevStats[d.key]) : v;
+    const diff = v - prev;
+    const chip = diff!==0 ? `<span class="chip ${diff>0?'up':'down'}">${diff>0?'+':''}${diff}</span>` : "";
+    html += `
+      <div class="stat">
+        <div class="lab"><b>${d.name}</b><span class="num">${v} ${chip}</span></div>
+        <div class="bar ${d.cls}"><i style="width:${v}%"></i></div>
+      </div>`;
+  });
+  // 钱(私财 / 家用)
+  const mo = m.money, pw = game.wealth, pprev = game.prevStats ? game.prevStats._wealth : pw;
+  const wdiff = (pprev!=null)? (pw - pprev): 0;
+  const wchip = wdiff!==0 ? `<span class="chip ${wdiff>0?'up':'down'}">${wdiff>0?'+':''}${wdiff}</span>` : "";
+  html += `
+    <div class="stat">
+      <div class="lab"><b>${mo.name}</b><span class="num"><span class="silver">${pw}</span><span style="font-size:11px;color:var(--ink-soft)"> ${mo.unit}</span> ${wchip}</span></div>
+      <div class="bar ${mo.bar}"><i style="width:${Math.min(100, pw/mo.div)}%"></i></div>
+    </div>`;
+  grid.innerHTML = html;
+  $("powerTag").textContent = game.powerTag || "—";
+  $("powerDesc").textContent = game.powerDesc || "";
+}
+
+/* ===================== 剧情 + 选项渲染 ===================== */
+let selected = new Set();
+function renderScene(data){
+  const sa = $("sceneArea");
+  let changesHtml = "";
+  if(data.changes && data.changes.length){
+    changesHtml = `<div class="changes">` + data.changes.map(c=>{
+      const up = (c.delta||0) >= 0;
+      return `<span class="c ${up?'up':'down'}">${c.name} ${up?'+':''}${c.delta}｜${c.reason||''}</span>`;
+    }).join("") + `</div>`;
+  }
+  sa.innerHTML = `
+    <div class="scene">
+      <div class="meta">${game.stage}　·　第 ${game.turn} 回合</div>
+      <div class="body">${escapeHtml(data.scene||"").replace(/\n/g,"<br/>")}</div>
+    </div>
+    ${changesHtml}`;
+}
+function renderChoices(choices){
+  selected = new Set();
+  const ca = $("choiceArea");
+  const m = M();
+  let list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
+  const usedFallback = list.length === 0;
+  if(usedFallback) list = m.fallback.slice();
+  game.lastChoices = list;
+  const defRoute = m.routes[m.routes.length-1];
+  const opts = list.map((c,i)=>`
+    <button class="opt" data-i="${i}">
+      <span class="box">✓</span>
+      <span class="txt">
+        <span class="rt rt-${c.route||defRoute}">${c.route||defRoute}</span><span class="ti">${escapeHtml(c.title||'')}</span>
+        <div class="de">${escapeHtml(c.detail||'')}</div>
+      </span>
+    </button>`).join("");
+  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对继续。</div>` : "";
+  ca.innerHTML = `
+    <div class="choices">
+      <div class="hint">${m.hint}</div>
+      ${fbHint}
+      ${opts}
+      <div class="actbar">
+        <button class="btn btn-main" id="commitBtn">${m.commitBtn}</button>
+      </div>
+    </div>`;
+  ca.querySelectorAll(".opt").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const i = +btn.dataset.i;
+      if(selected.has(i)){ selected.delete(i); btn.classList.remove("sel"); }
+      else { selected.add(i); btn.classList.add("sel"); }
+    });
+  });
+  $("commitBtn").addEventListener("click", commitTurn);
+}
+async function regenChoices(){
+  showLoading("正在重新铺开抉择……");
+  try{
+    const data = await askModel(`（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合恰好 4 个抉择选项写进 choices(覆盖${M().routes.join("/")}),scene 字段留空,不要推进新剧情、不要改数值、不要结束游戏。）`);
+    const clean = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
+    if(clean.length === 0){ renderChoices([]); saveGame(); return; }
+    renderChoices(data.choices);
+    saveGame();
+  }catch(e){
+    showError("没取到选项:"+e.message);
+    const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
+  }
+}
+function escapeHtml(s){ return (s||"").replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+function showLoading(text){
+  $("choiceArea").innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="tip">${text||"老夫人正在斟酌……"}</div>
+    </div>`;
+}
+function showError(msg){
+  const ca = $("choiceArea");
+  const box = document.createElement("div");
+  box.className = "errbox";
+  box.innerHTML = msg + '<br/><button class="btn btn-ghost" id="retryBtn" style="margin-top:10px;width:100%">重试这一步</button>';
+  ca.innerHTML = "";
+  ca.appendChild(box);
+}
+
+/* ===================== 与模型交互 ===================== */
+function systemPrompt(){ return M().sys(cfg.difficulty); }
+
+function buildUserMessage(actionText){
+  const m = M();
+  const snap = m.snap(game);
+  if(game.turn === 0){ return m.openMsg(cfg.difficulty); }
   const nextTurn = game.turn + 1;
   const sug = suggestStage(nextTurn);
   const remain = MAX_TURNS - nextTurn;
   let pace = `\n\n【节奏控制】下一回合是第 ${nextTurn} 回合,本局以约 ${MAX_TURNS} 回合收官为基准,建议阶段应为「${sug}」——stage 字段必须推进到该阶段,绝不可滞留前期。`;
   if(remain <= 0)      pace += `已到收官回合,本回合必须给出结局并设 ended=true。`;
-  else if(remain <= 2) pace += `距收尾仅约 ${remain} 回合,请加速收束,在最多 2 回合内导向结局(善终或败亡皆可,依局势而定)。`;
+  else if(remain <= 2) pace += `距收尾仅约 ${remain} 回合,请加速收束,在最多 2 回合内导向结局,依局势而定。`;
   else                 pace += `距收尾约 ${remain} 回合,请让局势朝该阶段实质推进,不要原地踏步。`;
-  return `${snap}${pace}\n\n【老夫人本回合的决断】\n${actionText}\n\n请据此续写剧情并更新面板与阶段,给出下一回合的 4 个抉择(若已到结局则结束)。`;
+  return `${snap}${pace}\n\n【老夫人本回合的决断】\n${actionText}\n\n${m.turnTail}`;
 }
 
 async function askModel(actionText){
@@ -735,7 +882,6 @@ async function askModel(actionText){
   if(!cfg.key) throw new Error("还没填 API key,点右上角 ⚙ 去设置。");
   const sys = systemPrompt();
   const user = buildUserMessage(actionText);
-  // 组装带历史的消息
   const messages = [{ role:"system", content:sys }];
   game.history.forEach(h=> messages.push(h));
   messages.push({ role:"user", content:user });
@@ -746,7 +892,6 @@ async function askModel(actionText){
   } else {
     data = await callOpenAICompatible(cfg.base, cfg.key, cfg.model, messages);
   }
-  // 记忆:把这轮 user 与模型 scene 压进 history(精简,避免上下文爆炸)
   game.history.push({ role:"user", content:user });
   game.history.push({ role:"assistant", content: JSON.stringify({scene:(data.scene||"").slice(0,600), stats:data.stats, powerTag:data.powerTag, stage:data.stage}) });
   if(game.history.length > 24) game.history = game.history.slice(-24);
@@ -762,7 +907,6 @@ async function callOpenAICompatible(base, key, model, messages){
       body:JSON.stringify(body) });
   }catch(e){ throw new Error("网络请求没发出去:"+e.message+"。检查接口地址,或该接口是否允许浏览器跨域。"); }
   if(!r.ok){
-    // 有的接口不支持 response_format,去掉重试一次
     if(r.status===400){
       try{
         const r2 = await fetch(base,{method:"POST",
@@ -815,22 +959,24 @@ async function readErr(r){
 
 /* ===================== 应用模型返回，更新游戏 ===================== */
 function applyResult(data){
-  const wasOpening = (game.turn === 0);   // 开局回合:不显示与初始默认值的"增减"
-  const prevHealth = game.stats.health;   // 用于约束康健只减不增
+  const wasOpening = (game.turn === 0);
+  const prevHealth = game.stats.health;
   game.prevStats = Object.assign({}, game.stats, { _wealth: game.wealth });
   if(data.stats){
-    ["good","fame","intel"].forEach(k=>{
+    // 除 health 外的属性按当前模式逐项更新
+    M().stats.forEach(d=>{
+      const k = d.key;
+      if(k === "health") return;
       if(typeof data.stats[k] === "number") game.stats[k] = clampStat(data.stats[k]);
     });
-    // 康健:老夫人年事已高,只减不增——AI 给的值不得高于上回合(修养至多维持),开局除外;再叠加每回合自然衰老
+    // 康健:老夫人年事已高,只减不增——开局除外;再叠加每回合自然衰老
     if(wasOpening){
       if(typeof data.stats.health === "number") game.stats.health = clampStat(data.stats.health);
     } else {
       let h = (typeof data.stats.health === "number") ? clampStat(data.stats.health) : prevHealth;
-      h = Math.min(h, prevHealth);                       // 修养也不让康健回升
-      const decay = (cfg.difficulty === "凶险") ? 2 : 1; // 逐回合自然衰老
+      h = Math.min(h, prevHealth);
+      const decay = (cfg.difficulty === "凶险") ? 2 : 1;
       game.stats.health = clampStat(h - decay);
-      // 修正 changes 里的康健项,确保剧情下方标签与实际一致(必为下降)
       const realDelta = game.stats.health - prevHealth;
       data.changes = Array.isArray(data.changes) ? data.changes.filter(c=> c && c.name !== "康健") : [];
       if(realDelta !== 0){
@@ -840,49 +986,25 @@ function applyResult(data){
     }
   }
   if(typeof data.wealth === "number") game.wealth = Math.max(0, Math.round(data.wealth));
-  if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/[府氏]$/,"").slice(0,2); }
+  if(data.surname && !game.surname){ game.surname = String(data.surname).replace(/[府氏家]$/,"").slice(0,2); }
   if(data.powerTag) game.powerTag = data.powerTag;
   if(data.powerDesc) game.powerDesc = data.powerDesc;
   if(Array.isArray(data.newAchievements)) data.newAchievements.forEach(a=>{ if(a && !game.achievements.includes(a)) game.achievements.push(a); });
   game.turn += 1;
-  game.stage = suggestStage(game.turn);   // 阶段按回合硬控,AI 老停在前期,这里强制推进
+  game.stage = suggestStage(game.turn);
   game.lastScene = data.scene || "";
   game.lastChoices = data.choices || [];
-  if(wasOpening){ game.prevStats = null; data.changes = []; }  // 开局不计增减
+  if(wasOpening){ game.prevStats = null; data.changes = []; }
 
   // 健康归零兜底
   if(game.stats.health <= 0 && !data.ended){
     data.ended = true;
-    data.ending = data.ending || {
-      type:"寿终正寝",
-      title:"灯枯油尽,撒手人寰",
-      summary:`第 ${game.turn} 回合,${game.surname||"侯府"}府老夫人终因操劳过度、心力交瘁,于深夜阖目而逝。她未及看到棋局的最后落子,但满门荣辱已系于儿孙之手。`,
-      epitaph:"机关算尽，终抵不过岁月催人。",
-      achievements: game.achievements.slice()
-    };
+    data.ending = data.ending || M().deathEnding(game);
   }
-
-  // 回合数硬兜底:即便 AI 不肯收尾,超过上限也强制收束,按当前局势判善终/败亡
+  // 回合数硬兜底:即便 AI 不肯收尾,超过上限也强制收束
   if(!data.ended && game.turn >= MAX_TURNS + 3){
     data.ended = true;
-    const s = game.stats;
-    let type, title, epitaph, good;
-    if(game.wealth <= 0){
-      good=false; type="破产败落"; title="金尽人散,家道中落"; epitaph="昔年钟鸣鼎食,终散作过眼云烟。";
-    } else if(s.fame < 25 && s.good < 25){
-      good=false; type="众叛亲离"; title="墙倒众推,门庭凋零"; epitaph="机关算尽太聪明,反误了卿卿性命。";
-    } else if((game.powerTag||"").includes("控皇") || (game.powerTag||"").includes("幕后")){
-      good=true; type="幕后无冕"; title="垂帘不坐,权倾朝野"; epitaph="无冕而王,功过任由后人评说。";
-    } else {
-      good=true; type="安稳权臣"; title="三朝柱石,富贵绵长"; epitaph="忠勤一世,簪缨世代不绝。";
-    }
-    data.ending = data.ending || {
-      type, title, epitaph,
-      summary:`历经 ${game.turn} 回合权谋周旋,${game.surname||""}府终于走到棋局尽头。` +
-        (good ? `老夫人以一己之力撑起满门,儿孙各承其志、文武有继,家族就此定格于此番荣光。`
-              : `老夫人虽机关算尽,终究没能护住满门荣华,昔日权势如沙堡崩塌。`),
-      achievements: game.achievements.slice()
-    };
+    data.ending = data.ending || M().capEnding(game);
   }
 
   if(data.ended){
@@ -896,7 +1018,6 @@ function applyResult(data){
   }
   renderPanel();
   renderScene(data);
-  // 模型偶尔漏给选项:自动补一次,不打断玩家(防死循环只自动重试一次)
   const cleanChoices = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
   if(cleanChoices.length === 0 && !game._regenTried){
     game._regenTried = true;
@@ -911,15 +1032,14 @@ function applyResult(data){
 
 /* ===================== 回合提交 ===================== */
 async function commitTurn(){
-  // 收集所选项
   const picks = [];
   selected.forEach(i=>{ const c = game.lastChoices[i]; if(c) picks.push(`【${c.route}】${c.title}`); });
   if(picks.length===0){ toast("先勾选至少一项"); return; }
   const n = picks.length;
   const action = picks.join("；") +
-    (n>1 ? `\n（本回合老夫人同时推进 ${n} 项行动,请按多选惩罚规则,把康健与私财的消耗按 ${n} 项显著叠加。）` : "");
+    (n>1 ? `\n（本回合老夫人同时推进 ${n} 项行动,请按多选惩罚规则,把${M().penalty}的消耗按 ${n} 项显著叠加。）` : "");
 
-  showLoading("落子已定,正在推演朝局……");
+  showLoading(M().loadingTurn);
   try{
     const data = await askModel(action);
     applyResult(data);
@@ -932,12 +1052,13 @@ async function commitTurn(){
 /* ===================== 开局 ===================== */
 async function startNewGame(){
   if(!cfg.key){ show("settings"); loadSettingsToForm(); toast("先填一个 API key"); return; }
-  game = freshGame();
+  game = freshGame(currentModeId || "quanmou");
+  applyTopbar(game.mode);
   updateSeal();
   show("game");
   renderPanel();
   $("sceneArea").innerHTML = `<div class="scene"><div class="meta">楔子</div></div>`;
-  $("choiceArea").innerHTML = `<div class="loading"><div class="spinner"></div><div class="tip">正在为本局世家立姓、铺陈开局棋势……</div></div>`;
+  $("choiceArea").innerHTML = `<div class="loading"><div class="spinner"></div><div class="tip">${M().loadingOpen}</div></div>`;
   try{
     const data = await askModel("");
     applyResult(data);
@@ -951,7 +1072,7 @@ async function startNewGame(){
 function renderEnding(ending){
   ending = ending || {};
   const achs = (ending.achievements && ending.achievements.length) ? ending.achievements : game.achievements;
-  const s = game.stats;
+  const fs = M().finalStats(game);
   $("endingArea").innerHTML = `
     <div class="ending">
       <div class="ribbon">— 终 局 —</div>
@@ -967,28 +1088,69 @@ function renderEnding(ending){
       </ul>
     </div>
     <div class="final-stats">
-      <div class="fs"><span>历经回合</span><b>${game.turn}</b></div>
-      <div class="fs"><span>家族权势</span><b>${escapeHtml(game.powerTag)}</b></div>
-      <div class="fs"><span>善恶 风评</span><b>${s.good}</b></div>
-      <div class="fs"><span>朝野名声</span><b>${s.fame}</b></div>
-      <div class="fs"><span>临终康健</span><b>${s.health}</b></div>
-      <div class="fs"><span>遗下私财</span><b>${game.wealth} 万两</b></div>
+      ${fs.map(([l,v])=>`<div class="fs"><span>${escapeHtml(l)}</span><b>${escapeHtml(String(v))}</b></div>`).join("")}
     </div>`;
+}
+
+/* ===================== 首页 / 模式 ===================== */
+function renderHome(){
+  const ids = ["quanmou","richang"];
+  $("modeList").innerHTML = ids.map(id=>{
+    const m = MODES[id];
+    const saved = loadGame(id);
+    const cont = saved ? `<span class="cont">· 有存档可继续</span>` : "";
+    return `
+      <button class="mode-card" data-mode="${id}">
+        <div class="mc-seal ${m.sealCls}">${m.seal}</div>
+        <div class="mc-body">
+          <div class="mc-name">${m.homeName}${cont}</div>
+          <div class="mc-desc">${m.homeDesc}</div>
+          <div class="mc-tags">${m.homeTags.map(t=>`<span>${t}</span>`).join("")}</div>
+        </div>
+        <div class="mc-arrow">›</div>
+      </button>`;
+  }).join("");
+  $("modeList").querySelectorAll(".mode-card").forEach(btn=>{
+    btn.addEventListener("click", ()=> enterMode(btn.dataset.mode));
+  });
+}
+function enterMode(modeId){
+  currentModeId = modeId;
+  localStorage.setItem("lfr_mode", modeId);
+  game = null;
+  fillStartPage();
+  show("start");
+}
+function fillStartPage(){
+  const m = MODES[currentModeId] || MODES.quanmou;
+  applyTopbar(m.id);
+  $("heroSeal").textContent = m.seal;
+  $("heroSeal").className = "seal-big " + m.sealCls;
+  $("heroTitle").textContent = m.heroTitle;
+  $("heroSub").innerHTML = m.heroSub;
+  $("heroLines").innerHTML = m.heroLines.map(t=>`<span>${t}</span>`).join("");
+  $("newGameBtn").textContent = m.startBtn;
+  refreshStartNotice();
 }
 
 /* ===================== 事件绑定 ===================== */
 $("gearBtn").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
 $("toSettingsBtn").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
-$("settingsBackBtn").addEventListener("click", ()=>{ refreshStartNotice(); show("start"); });
+$("settingsBackBtn").addEventListener("click", ()=>{ if(currentModeId){ refreshStartNotice(); show("start"); } else { show("home"); } });
 $("settingsSaveBtn").addEventListener("click", ()=>{
-  saveSettingsFromForm(); toast("设置已保存"); refreshStartNotice(); show("start");
+  saveSettingsFromForm(); toast("设置已保存");
+  if(currentModeId){ refreshStartNotice(); show("start"); } else { renderHome(); show("home"); }
 });
 $("noKeyNotice").addEventListener("click", ()=>{ loadSettingsToForm(); show("settings"); });
 $("newGameBtn").addEventListener("click", startNewGame);
+$("backHomeBtn").addEventListener("click", ()=>{ renderHome(); show("home"); });
+$("homeTop").addEventListener("click", ()=>{ if(confirm("返回首页?当前对局进度已自动保存,可从首页继续。")){ renderHome(); show("home"); } });
 $("continueBtn").addEventListener("click", ()=>{
-  const saved = loadGame();
+  const saved = loadGame(currentModeId);
   if(!saved){ toast("没有存档"); return; }
   game = saved;
+  if(!game.mode) game.mode = currentModeId;
+  applyTopbar(game.mode);
   updateSeal();
   if(game.ended){ show("ending"); renderPanel(); renderEnding(game.ending); return; }
   show("game"); renderPanel();
@@ -997,17 +1159,18 @@ $("continueBtn").addEventListener("click", ()=>{
 });
 $("restartTop").addEventListener("click", ()=>{ if(confirm("确定重开一局?当前进度会被覆盖。")) startNewGame(); });
 $("endingRestartBtn").addEventListener("click", startNewGame);
+$("endingHomeBtn").addEventListener("click", ()=>{ renderHome(); show("home"); });
 
 function refreshStartNotice(){
   $("noKeyNotice").classList.toggle("hidden", !!cfg.key);
-  const saved = loadGame();
+  const saved = loadGame(currentModeId);
   $("continueBtn").style.display = saved ? "block" : "none";
 }
 
 /* ===================== 初始化 ===================== */
 loadSettingsToForm();
-refreshStartNotice();
-show("start");
+renderHome();
+show("home");
 </script>
 </body>
 </html>
