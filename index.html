@@ -590,7 +590,7 @@ const MODES = {
 - 家族权势(powerTag):隐藏核心,三档递进——地方割据 / 朝堂权臣 / 幕后控皇。
 
 【规则】
-1. 每回合必须给出恰好 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一);choices 数组在任何非结局回合都绝不可为空、不可少于 4 项。玩家会勾选其中一项或多项合并执行。
+1. 每回合优先给 4 个选项,分别覆盖「保守 / 强攻 / 隐忍 / 布局」四条路线(route 字段必须是这四个词之一);choices 紧跟在 stats 之后输出,避免被截断。量力而行:若局势单一、或老夫人精力不济(系统会在消息里告知本回合"最多 N 个"),可只给最贴合的 2-3 个,宁缺毋滥不硬凑;但任何非结局回合都绝不可为空、至少给 1 个真实可选项,绝不输出空 choices。玩家会勾选其中一项或多项合并执行。
 2. 【多选惩罚·必须严格执行】玩家同时勾选的行动越多,康健与私财的消耗必须随勾选数量显著叠加:选 1 项正常;2 项约 1.5 倍;3 项约 2 倍;4 项约 2.5-3 倍。正向增益也叠加但边际递减,绝不能让"全选 4 项"成为无脑稳赚。系统会注明本回合选了几项。
 3. 收到玩家行动后:写一段精炼、连贯、有张力的剧情(scene,100-160 字,开局回合不超 220 字),只交代关键过程与利弊后果,凝练点到为止;然后更新全部数值(stats 给绝对值)。选项 detail 每条不超 25 字。
 4. 剧情强制连贯:承接此前所有伏笔(玉玺线索、敌方余孽、皇帝身体、儿孙动向),不重置、不遗忘。
@@ -688,7 +688,7 @@ const MODES = {
 - 家境门风(powerTag):隐藏综合档位,三档递进——寻常人家 / 和睦之家 / 兴旺门第。
 
 【规则】
-1. 每回合必须给出恰好 4 个选项,分别覆盖「持家 / 严教 / 慈和 / 张罗」四条路线(route 字段必须是这四个词之一);非结局回合 choices 绝不可为空、不可少于 4 项。玩家会勾选其中一项或多项合并执行。
+1. 每回合优先给 4 个选项,分别覆盖「持家 / 严教 / 慈和 / 张罗」四条路线(route 字段必须是这四个词之一);choices 紧跟在 stats 之后输出,避免被截断。量力而行:若本回合局势单一、或老夫人精力不济(系统会在消息里告知本回合"最多 N 个"),就只给最贴合的 2-3 个,宁可少而贴切、不要硬凑;但任何非结局回合都绝不可为空、至少给 1 个真实可选项,绝不输出空 choices。玩家会勾选其中一项或多项合并执行。
 2. 【多选惩罚·必须严格执行】同时操持的事越多,老夫人越劳神费钱,康健与家用的消耗随勾选数量叠加:选 1 项正常;2 项约 1.5 倍;3 项约 2 倍;4 项约 2.5-3 倍。增益也叠加但边际递减,绝不能让"全选 4 项"成为无脑稳赚。系统会注明本回合选了几项。
 3. 收到玩家行动后:写一段精炼、连贯、有生活气与温度的剧情(scene,100-160 字,开局回合不超 220 字),交代关键经过与得失,凝练有人情味;然后更新全部数值(stats 给绝对值)。选项 detail 每条不超 25 字。
 4. 剧情强制连贯:承接子女性情与前程、婚嫁进展、家计起落、老伴境况、邻里恩怨等所有伏笔,不重置、不遗忘。
@@ -855,14 +855,25 @@ function renderScene(data){
     </div>
     ${changesHtml}`;
 }
+// 康健越低,能斟酌的事越少:精力决定本回合选项数上限
+function healthChoiceCap(){
+  const h = (game && game.stats && typeof game.stats.health==="number") ? game.stats.health : 100;
+  if(h < 20) return 2;
+  if(h < 38) return 3;
+  return 4;
+}
 function renderChoices(choices){
   selected = new Set();
   const ca = $("choiceArea");
   const m = M();
+  // 有几个用几个:AI 给的有效选项直接用(1-3 个也不丢弃),真 0 个才通用兜底
   let list = (Array.isArray(choices)?choices:[]).filter(c=> c && (c.title||c.detail));
   const usedFallback = list.length === 0;
   if(usedFallback) list = m.fallback.slice();
+  const cap = healthChoiceCap();
+  if(list.length > cap) list = list.slice(0, cap);   // 康健不济:能斟酌的事变少(只减不补)
   game.lastChoices = list;
+  const lowHealth = !!(game && game.stats && game.stats.health < 38);
   const defRoute = m.routes[m.routes.length-1];
   const opts = list.map((c,i)=>`
     <button class="opt" data-i="${i}">
@@ -872,10 +883,13 @@ function renderChoices(choices){
         <div class="de">${escapeHtml(c.detail||'')}</div>
       </span>
     </button>`).join("");
-  const fbHint = usedFallback ? `<div class="nochoice">AI 这回合没给出贴合选项,先用下面这组通用应对继续。</div>` : "";
+  const fbHint = usedFallback
+    ? `<div class="nochoice">${lowHealth?'老夫人这一刻精神不济,只理出下面这几桩要紧事':'这一回合的光景一时没铺开,先以下面这几样寻常应对'},先从中拣选。</div>`
+    : "";
+  const hintText = m.hint + (lowHealth ? "（精力不济,能斟酌的余地也少了）" : "");
   ca.innerHTML = `
     <div class="choices">
-      <div class="hint">${m.hint}</div>
+      <div class="hint">${hintText}</div>
       ${fbHint}
       ${opts}
       <div class="actbar">
@@ -949,6 +963,9 @@ function buildUserMessage(actionText){
   if(remain <= 0)      pace += `已到收官回合,本回合必须给出结局并设 ended=true。`;
   else if(remain <= 2) pace += `距收尾仅约 ${remain} 回合,请加速收束,在最多 2 回合内导向结局,依局势而定。`;
   else                 pace += `距收尾约 ${remain} 回合,请让局势朝该阶段实质推进,不要原地踏步。`;
+  // 量力而行:康健越低,本回合给的抉择越少(老夫人精力有限)
+  const cap = healthChoiceCap();
+  pace += `\n【选项数】本回合给 ${cap===4?'4':('最多 '+cap)} 个最贴合当下的抉择(老夫人康健仅 ${game.stats.health},精力有限时宁可少而贴切,绝不硬凑、绝不留空)。`;
   return `${snap}${pace}\n\n【老夫人本回合的决断】\n${actionText}\n\n${m.turnTail}`;
 }
 
@@ -974,7 +991,7 @@ async function askModel(actionText){
 }
 
 async function callOpenAICompatible(base, key, model, messages){
-  const body = { model, messages, temperature:0.9, max_tokens:2200, response_format:{ type:"json_object" } };
+  const body = { model, messages, temperature:0.9, max_tokens:3200, response_format:{ type:"json_object" } };
   let r;
   try{
     r = await fetch(base, { method:"POST",
@@ -986,8 +1003,8 @@ async function callOpenAICompatible(base, key, model, messages){
       try{
         const r2 = await fetch(base,{method:"POST",
           headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
-          body:JSON.stringify({ model, messages, temperature:0.9, max_tokens:2200 })});
-        if(r2.ok){ const d2=await r2.json(); return JSON.parse(extractJson(d2?.choices?.[0]?.message?.content||"")); }
+          body:JSON.stringify({ model, messages, temperature:0.9, max_tokens:3200 })});
+        if(r2.ok){ const d2=await r2.json(); return parseModelJson(d2?.choices?.[0]?.message?.content||""); }
       }catch{}
     }
     throw new Error(await readErr(r));
@@ -995,7 +1012,7 @@ async function callOpenAICompatible(base, key, model, messages){
   const d = await r.json();
   const txt = d?.choices?.[0]?.message?.content;
   if(!txt) throw new Error("模型没返回内容,换个模型或稍后再试。");
-  return JSON.parse(extractJson(txt));
+  return parseModelJson(txt);
 }
 
 async function callGemini(key, model, messages){
@@ -1008,7 +1025,7 @@ async function callGemini(key, model, messages){
   const body = {
     system_instruction:{ parts:[{ text:sys }] },
     contents,
-    generationConfig:{ responseMimeType:"application/json", temperature:0.9, maxOutputTokens:2200 }
+    generationConfig:{ responseMimeType:"application/json", temperature:0.9, maxOutputTokens:3500, thinkingConfig:{ thinkingBudget:0 } }
   };
   let r;
   try{ r = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }
@@ -1017,13 +1034,38 @@ async function callGemini(key, model, messages){
   const d = await r.json();
   const txt = d?.candidates?.[0]?.content?.parts?.[0]?.text;
   if(!txt) throw new Error("模型没返回内容（可能被安全过滤拦了）。");
-  return JSON.parse(extractJson(txt));
+  return parseModelJson(txt);
 }
 
 function extractJson(s){
   s = (s||"").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
   const a = s.indexOf("{"), b = s.lastIndexOf("}");
   return (a>=0 && b>a) ? s.slice(a,b+1) : s;
+}
+// 从(可能被截断的)原始文本里逐个抢救选项 {route,title,detail},截断时也能拿到前面几个
+function salvageChoices(raw){
+  const out = [];
+  const re = /\{[^{}]*?"route"\s*:\s*"([^"]*)"[^{}]*?"title"\s*:\s*"([^"]*)"[^{}]*?(?:"detail"\s*:\s*"([^"]*)")?[^{}]*?\}/g;
+  let m;
+  while((m = re.exec(raw))){ out.push({ route:m[1], title:m[2], detail:m[3]||"" }); }
+  return out;
+}
+// 统一解析模型返回:直接 parse → 截取 parse → 抢救 choices;parse 成功但 choices 缺失(多半被截断)也从原文补回
+function parseModelJson(txt){
+  let data = null;
+  try{ data = JSON.parse(txt); }catch{}
+  if(!data){ try{ data = JSON.parse(extractJson(txt)); }catch{} }
+  if(!data){
+    const sc = salvageChoices(txt);
+    if(sc.length) return { _truncated:true, scene:"", choices:sc };
+    throw new Error("模型返回的不是有效 JSON（可能被截断）,请重试,或在设置里换个模型/调小难度。");
+  }
+  const hasChoices = Array.isArray(data.choices) && data.choices.filter(c=> c && (c.title||c.detail)).length > 0;
+  if(!hasChoices){
+    const sc = salvageChoices(txt);
+    if(sc.length) data.choices = sc;
+  }
+  return data;
 }
 async function readErr(r){
   let detail = "";
