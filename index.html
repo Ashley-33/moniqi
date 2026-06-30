@@ -83,6 +83,20 @@
   .mc-tags span{font-size:10.5px;color:var(--gold-deep);border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:#f3ead7}
   .mc-arrow{font-size:24px;color:var(--gold);flex:none}
 
+  /* ====== 出身选择(仅寻常家计) ====== */
+  .origin-picker{padding:0 24px 8px}
+  .op-title{font-size:12px;color:var(--gold-deep);letter-spacing:1px;margin:0 0 10px;text-align:center}
+  .op-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .op-card{
+    text-align:left;cursor:pointer;background:#fbf5e6;border:1.5px solid var(--line);border-radius:10px;
+    padding:9px 11px;font:inherit;color:var(--ink);transition:.12s
+  }
+  .op-card:hover{border-color:var(--gold);background:#fdf8ec}
+  .op-card.sel{border-color:var(--red);background:#fbeee6;box-shadow:0 0 0 2px rgba(124,42,35,.12) inset}
+  .op-card .opn{font-size:14px;font-weight:700}
+  .op-card .opn .cls{font-size:10.5px;font-weight:700;color:var(--gold-deep);margin-left:5px}
+  .op-card .opd{font-size:11px;color:var(--ink-soft);line-height:1.45;margin-top:3px}
+
   /* ====== 数值面板 ====== */
   .panel{
     background:linear-gradient(180deg,#fbf4e3,#f1e4c9);
@@ -245,6 +259,8 @@
     .mode-card{padding:13px 13px;gap:11px}
     .mc-seal{width:46px;height:46px;font-size:23px}
     .mc-name{font-size:16px}
+    .origin-picker{padding:0 16px 6px}
+    .op-grid{grid-template-columns:1fr;gap:7px}
 
     .panel{padding:10px 12px;margin-bottom:10px;border-radius:13px;top:6px}
     .stats{grid-template-columns:repeat(2,1fr);gap:8px 12px}
@@ -319,6 +335,10 @@
       <h1 id="heroTitle">老夫人权谋</h1>
       <p class="sub" id="heroSub"></p>
       <div class="lines" id="heroLines"></div>
+    </div>
+    <div id="originPicker" class="origin-picker hidden">
+      <div class="op-title">选一个出身门第 · 决定开局家境与儿女前程</div>
+      <div class="op-grid" id="originGrid"><!-- JS 注入 --></div>
     </div>
     <div id="noKeyNotice" class="notice hidden">还没绑定 AI,先去设置里填一个自己的 key 才能开局 →</div>
     <div class="start-actions">
@@ -472,6 +492,37 @@ $("provider").addEventListener("change", ()=>{
 /* ===================== 模式配置 ===================== */
 const MAX_TURNS = 16;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
 
+/* ===================== 寻常家计 · 出身门第(士农工商 + 世家 + 官府) =====================
+   只作用于 richang 模式;开局按出身偏置初始数值、家用、门风,并把设定段拼进 systemPrompt。
+   必须定义在 MODES 之前——MODES.richang 的 snap/结局闭包会运行期引用本常量。 */
+const RICHANG_ORIGINS = {
+  nong:{ label:"耕读农家", cls:"农·平民", oneLine:"几亩薄田半耕半读,全家赌一个读书种子翻身",
+    bias:{harmony:5, reputation:3, children:-5, health:2}, wealth:28,
+    ladder:["寻常农家","耕读之家","书香新贵"],
+    promptSetting:"【本局出身:耕读农家(农·平民)】这户人家有几亩薄田,半耕半读,丈夫务农或在乡塾坐馆,腰背已被劳作压弯。家底最薄(几十两计),最大牵挂是供一个聪慧儿子读书出头、跳出农门——而供一个读书人,几乎要拿全家的肚皮去赌;荒年歉收、徭役赋税、束脩聘嫁拿不出钱是常压。子女出路:长子科举或入城学徒,女儿嫁殷实农家或读书人;中个秀才便是光耀门楣,中举是阖族大喜。门风三档:寻常农家→耕读之家→书香新贵。该出身宜走严教(博功名)+持家(保家底),张罗收益偏低;最易触发的遗憾是供读破产的家道中落。结局宜用贴合称谓(如寒门出贵子、耕读传家、卖尽薄田)。整局贯穿此设定,不得中途改变出身。" },
+  gong:{ label:"匠户人家", cls:"工·匠籍", oneLine:"祖传一门手艺,匠籍在身,绝活传子孙却困于贱役",
+    bias:{harmony:3, reputation:-3, children:0, health:-3}, wealth:40,
+    ladder:["匠户人家","巧手名匠","御用匠门"],
+    promptSetting:"【本局出身:匠户人家(工·平民)】祖传一门手艺(木/铁/绣/陶/营造,开局自定一门),匠籍在身、世代不得脱籍改业,常受官府无偿征役之苦,社会地位偏低、被乡里轻看(reputation 起步低)。家底略胜农户、现钱比农家活络。最大牵挂是手艺传谁(传子他不愿、传幼他不成)、能否脱匠籍、子弟能否读书改换门庭;同行压价、官府点匠当差、大单料钱垫不出是常忧。子女出路:长子继业或拼脱籍,女儿嫁同行/商户。门风三档:匠户人家→巧手名匠→御用匠门。该出身宜走持家(经营出口碑)+张罗(接官府大户订单),严教读书收益打折;康健易因日夜赶工受损。结局宜用贴合称谓(如绝活传家、御用匠门、手艺失传)。整局贯穿此设定,不得中途改变出身。" },
+  shang:{ label:"行商坐贾", cls:"商·货殖", oneLine:"铺面通南北、银钱足而门第卑,谋的是捐官联姻洗白",
+    bias:{harmony:-4, reputation:-8, children:0, health:-2}, wealth:130,
+    ladder:["坐贾小户","富甲一方","红顶皇商"],
+    promptSetting:"【本局出身:行商坐贾(商)】家有铺面或行商货栈,银钱最宽裕(数百两计),但「士农工商」居末:读书人耻于结亲、官吏视为肥羊、乡里口碑偏低(reputation 起步最低,且增益减半、须靠善举/捐输才给)。老伴常年在外行商、聚少离多,家中缺主心骨(harmony 偏低)。最大谋划是守财扩业、防纨绔败家、用钱给子弟捐功名或供读入仕、与书香官宦联姻抬门第、广散家财博乡里贤名。子女出路:长子承业或捐监科举,女儿议高门。门风三档:坐贾小户→富甲一方→红顶皇商。该出身宜走张罗(钱换名声与关系,独门强解)+严教(供子洗白),持家因不缺钱边际低。结局宜用贴合称谓(如弃商入仕、义商美名、银满箱而身边空)。整局贯穿此设定,不得中途改变出身。" },
+  shi:{ label:"书香门第", cls:"士·清流", oneLine:"清贫却清贵,满门指望科名,清高难当饭、名声易崩",
+    bias:{harmony:1, reputation:10, children:5, health:0}, wealth:60,
+    ladder:["清贫书香","书香门第","簪缨世族"],
+    promptSetting:"【本局出身:书香门第(士)】先人中过举/出过秀才/做过小官,牌坊上留着功名,家风清正、最重名节门风(reputation 起步高、子弟读书底子好、children 偏高),但「清高当不了饭吃」、家底空了大半、束脩排场开销大(清贵却清贫)。最大牵挂是长子科举接续功名(屡试不第则心气将颓)、勿坠家声、清白持身、婚配讲门当户对;要不要倾家陪嫁去攀一门清贵亲是常题。门风三档:清贫书香→书香门第→簪缨世族。该出身宜走严教(搏功名,边际最高)+慈和(维系家睦),持家收益一般;名声高=树大招风,一次科场失意或子弟行差就崩得最快(家声坠地)。结局宜用贴合称谓(如蟾宫折桂、簪缨继世、诗书满架米缸朝天)。整局贯穿此设定,不得中途改变出身。" },
+  li:{ label:"吏门胥家", cls:"官·胥吏", oneLine:"衙门当差、不入流却握实权,油水足而悬顶一把刀",
+    bias:{harmony:0, reputation:3, children:2, health:-2}, wealth:90,
+    ladder:["不入流吏门","衙门世家","脱吏显达"],
+    promptSetting:"【本局出身:吏门胥家(官府吏员)】世代在县衙当书办/差役/捕快/库吏,不入流的身份却掌实实在在的权与钱(reputation 略高、家用尚可、地方门路广),介于士民之间,既被仰仗也被轻视,易卷灰色钱财与是非。老伴当差多年得罪过人也欠过人情;新官上任清查旧账,衙门风向说变就变,旧案翻出便祸及妻儿。最大牵挂是子弟脱吏籍考功名或承袭差事、平衡人情与清白(每用门路捞实惠必带名声/清白风险)、不被同僚牵连获罪;经手的钱粮案子收不收那份好处是道德抉择。可触发主官贪墨/命案事发的抄家连累遗憾。门风三档:不入流吏门→衙门世家→脱吏显达。该出身宜走张罗(门路换利,自带名声反噬)+严教(供子脱吏正路)。结局宜用贴合称谓(如捐资入监脱吏入仕、靠山一倒墙倒众推)。整局贯穿此设定,不得中途改变出身。" },
+  shijia:{ label:"累世世家", cls:"世家·望族", oneLine:"百年门楣、田连阡陌、族规如山,守成即胜退步即败",
+    bias:{harmony:-6, reputation:13, children:3, health:-3}, wealth:260,
+    ladder:["世家旁支","钟鸣鼎食","百年望族"],
+    promptSetting:"【本局出身:累世世家(世家)】百年望族,祠堂巍峨、田连阡陌、僮仆成群、宗族数百口,你是执掌中馈手握账册的当家老太君,起步最富、声望最高、门风档位最高。但「君子之泽五世而斩」,这是各出身中家睦最难维持的(harmony 起步最低):妯娌争锋、嫡庶有别、争产争月例、奴仆中饱、姻亲攀附、盛极而衰。最大牵挂是守住家业不分崩、协调宗族、子孙联姻牵动家族势力、对败家惹事子弟是护短还是大义灭亲;可触发卷入大案被牵连籍没的高烈度遗憾。门风三档:世家旁支→钟鸣鼎食→百年望族。基数高、数值上涨需更难得的剧情而下跌容易,这是唯一需四路线均衡(尤重慈和调和家族)的保级战,多选惩罚对其最痛。结局宜用贴合称谓(如百世其昌、树倒猢狲散、分家析产大厦倾)。整局贯穿此设定,不得中途改变出身。" },
+};
+const RICHANG_ORIGIN_IDS = ["nong","gong","shang","shi","li","shijia"];
+
 const MODES = {
   /* ---------- 侯府权谋 ---------- */
   quanmou:{
@@ -592,7 +643,7 @@ const MODES = {
       {key:"health",     name:"康健",  cls:"b-health"},
       {key:"children",   name:"儿女",  cls:"b-intel" },
     ],
-    money:{ name:"家用", unit:"两", bar:"b-fame", div:2 },
+    money:{ name:"家用", unit:"两", bar:"b-fame", div:5 },
     routes:["持家","严教","慈和","张罗"],
     stages:[[4,"操持 · 前期"],[9,"婚嫁 · 中期"],[13,"含饴 · 后期"],[99,"暮年 · 收束"]],
     init:{ stats:{ harmony:65, reputation:60, health:78, children:55 }, wealth:40, powerTag:"寻常人家", powerDesc:"小门小户,儿女绕膝,日子紧巴却也安稳" },
@@ -602,7 +653,7 @@ const MODES = {
       {route:"慈和", title:"温言抚慰,以情教化", detail:"耐心开导,以慈母心暖家人"},
       {route:"张罗", title:"走动人情,张罗里外", detail:"串门走亲、托人说合、打点往来"},
     ],
-    snap:(g)=>{ const s=g.stats; return `【当前家况】家睦${s.harmony} 邻里${s.reputation} 康健${s.health} 儿女${s.children} 家用${g.wealth}两 ｜门风:${g.powerTag} ｜阶段:${g.stage} ｜已是第${g.turn}回合。`; },
+    snap:(g)=>{ const s=g.stats; const ob=(g.origin&&RICHANG_ORIGINS[g.origin])?` ｜出身:${RICHANG_ORIGINS[g.origin].label}`:""; return `【当前家况】家睦${s.harmony} 邻里${s.reputation} 康健${s.health} 儿女${s.children} 家用${g.wealth}两 ｜门风:${g.powerTag}${ob} ｜阶段:${g.stage} ｜已是第${g.turn}回合。`; },
     openMsg:(diff)=>`开始新的一局(难度:${diff})。请先随机为这户人家起一个寻常温厚的姓氏(放进 surname 字段),再按固定开局模板生成开局:交代这户人家的境况、老伴与儿女的性情和名字、开局压来的三桩家常牵挂,并给出第一回合的 4 个抉择选项。这是第 1 回合。`,
     turnTail:"请据此续写家中光景并更新面板与阶段,给出下一回合的 4 个抉择(若已到结局则结束)。",
     finalStats:(g)=>{ const s=g.stats; return [
@@ -620,7 +671,8 @@ const MODES = {
       else if((s.children||0)>=70 && g.wealth>=80){ good=true; type="教子有方"; title="儿女成器,家业兴旺"; epitaph="教子有方,门楣由她一手撑起。"; }
       else if(s.reputation>=70){ good=true; type="贤名乡里"; title="德高望重,乡邻敬重"; epitaph="积善之家,贤名传遍乡里。"; }
       else { good=true; type="儿孙满堂"; title="含饴弄孙,福寿双全"; epitaph="儿孙绕膝,福寿安康,一生圆满。"; }
-      return { type,title,epitaph, summary:`历经 ${g.turn} 回合的操持张罗,${g.surname||""}家老太太走到了暮年。`+(good?`儿女各自成家立业,家宅和顺、儿孙绕膝,她终于能在屋檐下安享这迟来的清福。`:`忙碌一生,到头来家境与亲情却没能两全,晚景多了几分凄凉。`), achievements:g.achievements.slice() };
+      const ob=(g.origin&&RICHANG_ORIGINS[g.origin])?`这户${RICHANG_ORIGINS[g.origin].label},`:"";
+      return { type,title,epitaph, summary:`${ob}历经 ${g.turn} 回合的操持张罗,${g.surname||""}家老太太走到了暮年。`+(good?`儿女各自成家立业,家宅和顺、儿孙绕膝,她终于能在屋檐下安享这迟来的清福。`:`忙碌一生,到头来家境与亲情却没能两全,晚景多了几分凄凉。`), achievements:g.achievements.slice() };
     },
     sys:(diff)=>`你是一款古风家庭生活文字模拟游戏的叙事引擎兼主持(GM)。严格按设定运行,只输出 JSON,不要任何额外文字。
 
@@ -659,7 +711,7 @@ const MODES = {
 7. 适时在 newAchievements 追加 1 个成就(如「长子中秀才」「幼女风光出阁」「修起三间新屋」「乡邻交口称贤」「抱上头孙」),没有给空数组。
 8. 数值变化写进 changes(每项 name/delta/reason),delta 相对上一回合增减。
 9. 阶段随回合推进,勿滞留前期:1-4 操持/5-9 婚嫁/10-13 含饴/14 起暮年。系统每回合附建议阶段,stage 必须据此推进。约 14-18 回合收束,逼近终局或触发结局条件即 ended=true。
-10. 结局分圆满与遗憾,据实给出:圆满——儿孙满堂 / 教子有方 / 贤名乡里;遗憾——家道中落 / 子孙不肖 / 积劳成疾 / 孤苦暮年。当 wealth≤0,或 children 跌破 25,或 harmony 与 reputation 双双跌破 25 时,果断导向对应遗憾结局,而非强行圆满。
+10. 结局分圆满与遗憾,据实给出:圆满——儿孙满堂 / 教子有方 / 贤名乡里;遗憾——家道中落 / 子孙不肖 / 积劳成疾 / 孤苦暮年。当 wealth≤0,或 children 跌破 25,或 harmony 与 reputation 双双跌破 25 时,果断导向对应遗憾结局,而非强行圆满。若本局有指定出身(见末尾出身设定段),结局的 type/title 请用贴合该出身的称谓(如寒门出贵子、弃商入仕、簪缨继世、脱吏入仕、世家凋零等),让收尾呼应这一生的出身与际遇。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
 { "surname":"林","stage":"操持 · 前期","scene":"...","stats":{"harmony":65,"reputation":60,"health":77,"children":55},"wealth":40,"powerTag":"和睦之家","powerDesc":"一句话描述家境门风","changes":[{"name":"康健","delta":-2,"reason":"操持家务"}],"newAchievements":[],"choices":[{"route":"持家","title":"...","detail":"..."},{"route":"严教","title":"...","detail":"..."},{"route":"慈和","title":"...","detail":"..."},{"route":"张罗","title":"...","detail":"..."}],"ended":false,"ending":null }
@@ -668,6 +720,7 @@ const MODES = {
 };
 
 let currentModeId = localStorage.getItem("lfr_mode") || "";
+let pendingOrigin = localStorage.getItem("lfr_richang_origin") || "__random__";   // 寻常家计开始页选中的出身
 function M(){ return MODES[(game && game.mode) || currentModeId] || MODES.quanmou; }
 function suggestStage(turn){
   const st = M().stages;
@@ -722,10 +775,11 @@ function updateSeal(){
 /* ===================== 游戏状态 ===================== */
 let game = null;
 
-function freshGame(modeId){
+function freshGame(modeId, originId){
   const m = MODES[modeId];
-  return {
+  const g = {
     mode: modeId,
+    origin: null,
     surname:"",
     stats: Object.assign({}, m.init.stats),
     wealth: m.init.wealth,
@@ -737,6 +791,19 @@ function freshGame(modeId){
     ended:false, ending:null,
     prevStats:null,
   };
+  // 寻常家计:按出身门第偏置初始数值、家用与门风(随缘/权谋不套用)
+  if(modeId==="richang" && originId && originId!=="__random__" && RICHANG_ORIGINS[originId]){
+    const o = RICHANG_ORIGINS[originId];
+    g.origin = originId;
+    g.stats.harmony    = clampStat(g.stats.harmony    + o.bias.harmony);
+    g.stats.reputation = clampStat(g.stats.reputation + o.bias.reputation);
+    g.stats.children   = clampStat(g.stats.children   + o.bias.children);
+    g.stats.health     = clampStat(g.stats.health     + o.bias.health);
+    g.wealth   = o.wealth;
+    g.powerTag = o.ladder[0];
+    g.powerDesc = o.oneLine;
+  }
+  return g;
 }
 function saveKey(modeId){ return "lfr_save_" + (modeId || (game && game.mode) || currentModeId || "quanmou"); }
 function saveGame(){ if(game) localStorage.setItem(saveKey(), JSON.stringify(game)); }
@@ -861,12 +928,25 @@ function showError(msg){
 }
 
 /* ===================== 与模型交互 ===================== */
-function systemPrompt(){ return M().sys(cfg.difficulty); }
+function systemPrompt(){
+  let s = M().sys(cfg.difficulty);
+  if(game && game.mode==="richang" && game.origin && RICHANG_ORIGINS[game.origin]){
+    s += "\n\n" + RICHANG_ORIGINS[game.origin].promptSetting;
+  }
+  return s;
+}
 
 function buildUserMessage(actionText){
   const m = M();
   const snap = m.snap(game);
-  if(game.turn === 0){ return m.openMsg(cfg.difficulty); }
+  if(game.turn === 0){
+    let om = m.openMsg(cfg.difficulty);
+    if(game.mode==="richang" && game.origin && RICHANG_ORIGINS[game.origin]){
+      const o = RICHANG_ORIGINS[game.origin];
+      om += `\n\n【本局出身:${o.label}】请严格按该出身设定开局:家底约 ${game.wealth} 两、门风起步为「${game.powerTag}」,依其子女出路与典型处境铺陈开局三桩牵挂,整局贯穿不变。`;
+    }
+    return om;
+  }
   const nextTurn = game.turn + 1;
   const sug = suggestStage(nextTurn);
   const remain = MAX_TURNS - nextTurn;
@@ -1052,7 +1132,9 @@ async function commitTurn(){
 /* ===================== 开局 ===================== */
 async function startNewGame(){
   if(!cfg.key){ show("settings"); loadSettingsToForm(); toast("先填一个 API key"); return; }
-  game = freshGame(currentModeId || "quanmou");
+  const oid = (currentModeId==="richang") ? pendingOrigin : null;
+  if(currentModeId==="richang") localStorage.setItem("lfr_richang_origin", pendingOrigin);
+  game = freshGame(currentModeId || "quanmou", oid);
   applyTopbar(game.mode);
   updateSeal();
   show("game");
@@ -1130,7 +1212,28 @@ function fillStartPage(){
   $("heroSub").innerHTML = m.heroSub;
   $("heroLines").innerHTML = m.heroLines.map(t=>`<span>${t}</span>`).join("");
   $("newGameBtn").textContent = m.startBtn;
+  // 出身选择仅寻常家计显示
+  const isRichang = (currentModeId === "richang");
+  $("originPicker").classList.toggle("hidden", !isRichang);
+  if(isRichang) renderOriginPicker();
   refreshStartNotice();
+}
+// 出身门第选择(随缘 + 六出身),点击切换 pendingOrigin
+function renderOriginPicker(){
+  if(!RICHANG_ORIGIN_IDS.includes(pendingOrigin) && pendingOrigin !== "__random__") pendingOrigin = "__random__";
+  const cards = [{id:"__random__", label:"随缘", cls:"AI 定", oneLine:"由 AI 随机定一个出身,每局都不同"}]
+    .concat(RICHANG_ORIGIN_IDS.map(id=>({ id, label:RICHANG_ORIGINS[id].label, cls:RICHANG_ORIGINS[id].cls, oneLine:RICHANG_ORIGINS[id].oneLine })));
+  $("originGrid").innerHTML = cards.map(c=>`
+    <button class="op-card${c.id===pendingOrigin?' sel':''}" data-oid="${c.id}">
+      <div class="opn">${c.label}<span class="cls">${c.cls}</span></div>
+      <div class="opd">${c.oneLine}</div>
+    </button>`).join("");
+  $("originGrid").querySelectorAll(".op-card").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      pendingOrigin = btn.dataset.oid;
+      $("originGrid").querySelectorAll(".op-card").forEach(b=> b.classList.toggle("sel", b===btn));
+    });
+  });
 }
 
 /* ===================== 事件绑定 ===================== */
