@@ -476,7 +476,7 @@ $("provider").addEventListener("change", ()=>{
 });
 
 /* ===================== 模式配置 ===================== */
-const MAX_TURNS = 16;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
+const MAX_TURNS = 10;   // 一局基准长度;前端节奏控制与硬兜底都以此为准
 
 /* ===================== 寻常家计 · 出身门第(士农工商 + 世家 + 官府) =====================
    只作用于 richang 模式;开局按出身偏置初始数值、家用、门风,并把设定段拼进 systemPrompt。
@@ -535,7 +535,7 @@ const MODES = {
     ],
     money:{ name:"私财", unit:"万两", bar:"b-fame", div:3 },
     routes:["保守","强攻","隐忍","布局"],
-    stages:[[4,"守局 · 前期"],[9,"布局 · 中期"],[13,"入局 · 后期"],[99,"定局 · 结局"]],
+    stages:[[3,"守局 · 前期"],[6,"布局 · 中期"],[8,"入局 · 后期"],[99,"定局 · 结局"]],
     init:{ stats:{ good:60, fame:60, health:75, intel:55 }, wealth:120, powerTag:"根基稳固", powerDesc:"侯府旧勋,儿孙各据其位" },
     fallback:[
       {route:"保守", title:"按兵不动,静观其变", detail:"暂不轻举妄动,守稳眼前局面"},
@@ -598,7 +598,7 @@ const MODES = {
 6. 难度=${diff}。凶险则危机更密、数值波动更大、敌手更狠;平稳则相反。
 7. 适时在 newAchievements 追加 1 个成就(如「平息御史弹劾」「玉玺现世」「次子封疆」「初掌宫闱」),没有给空数组。
 8. 数值变化写进 changes(每项 name/delta/reason),delta 相对上一回合增减。
-9. 阶段随回合推进,勿滞留前期:1-4 守局/5-9 布局/10-13 入局/14 起定局。系统每回合附建议阶段,stage 必须据此推进。约 14-18 回合收束,逼近终局或触发败亡条件即 ended=true。
+9. 阶段随回合推进,勿滞留前期(本局节奏紧凑,一生约 10 回合):1-3 守局/4-6 布局/7-8 入局/9 起定局。系统每回合附建议阶段,stage 必须据此推进。约 9-10 回合内必须收束,逼近终局或触发败亡条件即 ended=true,绝不可拖延。
 10. 结局分善终与败亡,据实给出:善终——安稳权臣 / 幕后无冕;败亡——满门抄斩 / 抄家流放 / 破产败落 / 寿终正寝 / 众叛亲离。当 wealth≤0,或 fame 与 good 双双跌至 25 以下,或谋皇权事败时,果断走向对应败亡结局。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
@@ -631,7 +631,7 @@ const MODES = {
     ],
     money:{ name:"家用", unit:"两", bar:"b-fame", div:5 },
     routes:["持家","严教","慈和","张罗"],
-    stages:[[4,"操持 · 前期"],[9,"婚嫁 · 中期"],[13,"含饴 · 后期"],[99,"暮年 · 收束"]],
+    stages:[[3,"操持 · 前期"],[6,"婚嫁 · 中期"],[8,"含饴 · 后期"],[99,"暮年 · 收束"]],
     init:{ stats:{ harmony:65, reputation:60, health:78, children:55 }, wealth:40, powerTag:"寻常人家", powerDesc:"小门小户,儿女绕膝,日子紧巴却也安稳" },
     fallback:[
       {route:"持家", title:"精打细算,操持家务", detail:"把柴米油盐安排妥帖"},
@@ -696,7 +696,7 @@ const MODES = {
 6. 难度=${diff}。凶险则家道多舛、变故频繁、数值波动大、人心更难测;平稳则相反。
 7. 适时在 newAchievements 追加 1 个成就(如「长子中秀才」「幼女风光出阁」「修起三间新屋」「乡邻交口称贤」「抱上头孙」),没有给空数组。
 8. 数值变化写进 changes(每项 name/delta/reason),delta 相对上一回合增减。
-9. 阶段随回合推进,勿滞留前期:1-4 操持/5-9 婚嫁/10-13 含饴/14 起暮年。系统每回合附建议阶段,stage 必须据此推进。约 14-18 回合收束,逼近终局或触发结局条件即 ended=true。
+9. 阶段随回合推进,勿滞留前期(本局节奏紧凑,一生约 10 回合):1-3 操持/4-6 婚嫁/7-8 含饴/9 起暮年。系统每回合附建议阶段,stage 必须据此推进。约 9-10 回合内必须收束,逼近终局或触发结局条件即 ended=true,绝不可拖延。
 10. 结局分圆满与遗憾,据实给出:圆满——儿孙满堂 / 教子有方 / 贤名乡里;遗憾——家道中落 / 子孙不肖 / 积劳成疾 / 孤苦暮年。当 wealth≤0,或 children 跌破 25,或 harmony 与 reputation 双双跌破 25 时,果断导向对应遗憾结局,而非强行圆满。若本局有指定出身(见末尾出身设定段),结局的 type/title 请用贴合该出身的称谓(如寒门出贵子、弃商入仕、簪缨继世、脱吏入仕、世家凋零等),让收尾呼应这一生的出身与际遇。
 
 【输出 JSON 格式】(只输出这个对象,不要 markdown 代码块)
@@ -910,10 +910,12 @@ async function regenChoices(){
   try{
     const data = await askModel(`（系统提示:上一回合你没有给出可选项。请基于当前局势,只补出本回合恰好 4 个抉择选项写进 choices(覆盖${M().routes.join("/")}),scene 字段留空,不要推进新剧情、不要改数值、不要结束游戏。）`);
     const clean = (Array.isArray(data.choices)?data.choices:[]).filter(c=> c && (c.title||c.detail));
+    game._regenTried = false;   // 本次补救已结束,放开下一回合的自动补救
     if(clean.length === 0){ renderChoices([]); saveGame(); return; }
     renderChoices(data.choices);
     saveGame();
   }catch(e){
+    game._regenTried = false;
     showError("没取到选项:"+e.message);
     const rb = $("retryBtn"); if(rb) rb.addEventListener("click", regenChoices);
   }
@@ -1075,7 +1077,17 @@ async function readErr(r){
 }
 
 /* ===================== 应用模型返回，更新游戏 ===================== */
+// 统一收束兜底:康健归零或回合超上限则强制结束(任何进入游戏页的路径都先过这道,含 continueMode 恢复存档)
+function enforceEnd(g){
+  if(!g) return false;
+  if(g.ended) return true;
+  if(g.stats && g.stats.health <= 0){ g.ended = true; g.ending = g.ending || M().deathEnding(g); return true; }
+  if((g.turn||0) >= MAX_TURNS + 2){ g.ended = true; g.ending = g.ending || M().capEnding(g); return true; }
+  return false;
+}
 function applyResult(data){
+  // 截断抢救:整段 JSON 没解析出来、只救回了选项 → 这一回合没有有效剧情/数值,不当正常回合,交给调用方重试
+  if(data && data._truncated){ throw new Error("这一回合 AI 没把话说完(可能被截断),请重试。"); }
   const wasOpening = (game.turn === 0);
   const prevHealth = game.stats.health;
   game.prevStats = Object.assign({}, game.stats, { _wealth: game.wealth });
@@ -1119,9 +1131,15 @@ function applyResult(data){
     data.ending = data.ending || M().deathEnding(game);
   }
   // 回合数硬兜底:即便 AI 不肯收尾,超过上限也强制收束
-  if(!data.ended && game.turn >= MAX_TURNS + 3){
+  if(!data.ended && game.turn >= MAX_TURNS + 2){
     data.ended = true;
     data.ending = data.ending || M().capEnding(game);
+  }
+  // 语义兜底:AI 在剧情里写了老夫人去世/这一生落幕却漏标 ended(后期才判,避免误伤前期他人死亡描写)
+  if(!data.ended && game.turn >= 5 &&
+     /(?:老夫人|老太太|她)[^。!？]{0,24}(?:安详(?:地)?(?:去了|离世|合眼|阖眼|长眠)|溘然长逝|阖目而逝|与世长辞|寿终正寝|油尽灯枯|撒手人寰|咽下最后一口气|无疾而终|溘然辞世)|这一生[^。]{0,20}(?:落幕|画上句点|走到了尽头|尘埃落定)/.test(data.scene || "")){
+    data.ended = true;
+    data.ending = data.ending || M().deathEnding(game);
   }
 
   if(data.ended){
@@ -1148,7 +1166,9 @@ function applyResult(data){
 }
 
 /* ===================== 回合提交 ===================== */
+let busy = false;   // 请求中并发锁:防连点「拿定主意」/重复开局
 async function commitTurn(){
+  if(busy) return;
   const picks = [];
   selected.forEach(i=>{ const c = game.lastChoices[i]; if(c) picks.push(`【${c.route}】${c.title}`); });
   if(picks.length===0){ toast("先勾选至少一项"); return; }
@@ -1156,6 +1176,7 @@ async function commitTurn(){
   const action = picks.join("；") +
     (n>1 ? `\n（本回合老夫人同时推进 ${n} 项行动,请按多选惩罚规则,把${M().penalty}的消耗按 ${n} 项显著叠加。）` : "");
 
+  busy = true;
   showLoading(M().loadingTurn);
   try{
     const data = await askModel(action);
@@ -1163,11 +1184,12 @@ async function commitTurn(){
   }catch(e){
     showError("出了点岔子:"+e.message);
     const rb = $("retryBtn"); if(rb) rb.addEventListener("click", ()=>commitTurn());
-  }
+  }finally{ busy = false; }
 }
 
 /* ===================== 开局 ===================== */
 async function startNewGame(){
+  if(busy) return;
   if(!cfg.key){ show("settings"); loadSettingsToForm(); toast("先填一个 API key"); return; }
   // 寻常家计:每局随机抽一个出身门第
   let oid = null;
@@ -1182,13 +1204,14 @@ async function startNewGame(){
   renderPanel();
   $("sceneArea").innerHTML = `<div class="scene"><div class="meta">楔子</div></div>`;
   $("choiceArea").innerHTML = `<div class="loading"><div class="spinner"></div><div class="tip">${M().loadingOpen}</div></div>`;
+  busy = true;
   try{
     const data = await askModel("");
     applyResult(data);
   }catch(e){
     showError("开局失败:"+e.message);
     const rb = $("retryBtn"); if(rb) rb.addEventListener("click", ()=>startNewGame());
-  }
+  }finally{ busy = false; }
 }
 
 /* ===================== 结局渲染 ===================== */
@@ -1222,7 +1245,7 @@ function renderHome(){
   $("modeList").innerHTML = ids.map(id=>{
     const m = MODES[id];
     const saved = loadGame(id);
-    const canCont = saved && !saved.ended && (saved.turn||0) > 0;
+    const canCont = saved && !saved.ended && (saved.turn||0) > 0 && (saved.turn||0) < MAX_TURNS + 2 && (!saved.stats || saved.stats.health > 0);
     const cont = canCont ? `<button class="mc-cont" data-cont="${id}">↻ 继续上一局 · 第 ${saved.turn} 回合</button>` : "";
     return `
       <div class="mode-wrap">
@@ -1261,7 +1284,8 @@ function continueMode(modeId){
   if(!game.mode) game.mode = modeId;
   applyTopbar(game.mode);
   updateSeal();
-  if(game.ended){ show("ending"); renderPanel(); renderEnding(game.ending); return; }
+  // 进门先过统一收束:已结束、康健归零或超回合上限(含旧存档)的局,直接进结局页而非可继续状态
+  if(enforceEnd(game)){ saveGame(); renderPanel(); renderEnding(game.ending); show("ending"); return; }
   show("game"); renderPanel();
   renderScene({ scene:game.lastScene, stage:game.stage, changes:[] });
   renderChoices(game.lastChoices);
@@ -1280,7 +1304,7 @@ $("settingsSaveBtn").addEventListener("click", ()=>{
 });
 $("homeTop").addEventListener("click", ()=>{ if(confirm("返回首页?当前对局进度已自动保存,可从首页继续。")){ renderHome(); show("home"); } });
 $("restartTop").addEventListener("click", ()=>{ if(confirm("确定重开一局?当前进度会被覆盖。")) startNewGame(); });
-$("endingRestartBtn").addEventListener("click", startNewGame);
+$("endingRestartBtn").addEventListener("click", ()=>{ if(game && game.mode) currentModeId = game.mode; startNewGame(); });
 $("endingHomeBtn").addEventListener("click", ()=>{ renderHome(); show("home"); });
 
 /* ===================== 初始化 ===================== */
